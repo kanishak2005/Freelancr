@@ -6,10 +6,7 @@ import { ApiError, HTTP_STATUS } from "../../shared";
 
 import { env } from "../../config/env";
 
-const razorpay = new Razorpay({
-  key_id: env.RAZORPAY_KEY_ID,
-  key_secret: env.RAZORPAY_KEY_SECRET,
-});
+import razorpay from "../../config/razorpay";
 
 export class PaymentService {
   static async createOrder(

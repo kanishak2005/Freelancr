@@ -124,4 +124,56 @@ static async findAll() {
 static async deleteUser(id: string) {
   return User.findByIdAndDelete(id);
 }
+static async updateResume(
+  id: string,
+  resume: string,
+  publicId: string
+) {
+  return User.findByIdAndUpdate(
+    id,
+    {
+      resume,
+      resumePublicId: publicId,
+    },
+    {
+      new: true,
+    }
+  );
+}
+
+static async addPortfolio(
+  id: string,
+  item: any
+) {
+  return User.findByIdAndUpdate(
+    id,
+    {
+      $push: {
+        portfolio: item,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+}
+
+static async removePortfolio(
+  id: string,
+  publicId: string
+) {
+  return User.findByIdAndUpdate(
+    id,
+    {
+      $pull: {
+        portfolio: {
+          publicId,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  );
+}
 }

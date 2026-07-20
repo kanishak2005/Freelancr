@@ -24,4 +24,13 @@ export interface IUser {
   passwordResetToken?: string;
 
 passwordResetExpires?: Date;
+resume?: string;
+
+resumePublicId?: string;
+
+portfolio?: {
+  title: string;
+  image: string;
+  publicId: string;
+}[];
 }

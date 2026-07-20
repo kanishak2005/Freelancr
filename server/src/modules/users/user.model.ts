@@ -61,6 +61,25 @@ const userSchema = new Schema<IUser>(
       type: [String],
       default: [],
     },
+    resume: {
+  type: String,
+  default: "",
+},
+
+resumePublicId: {
+  type: String,
+  default: "",
+},
+
+portfolio: [
+  {
+    title: String,
+
+    image: String,
+
+    publicId: String,
+  },
+],
 
     isVerified: {
       type: Boolean,

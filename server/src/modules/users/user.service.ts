@@ -1,6 +1,6 @@
 import { UserRepository } from "./user.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
-
+import { UploadService } from "../uploads/upload.service";
 export class UserService {
   static async getProfile(userId: string) {
     const user = await UserRepository.findById(userId);
@@ -72,4 +72,53 @@ export class UserService {
       message: "Account deleted successfully",
     };
   }
+  static async uploadResume(
+  userId: string,
+  file: Express.Multer.File
+) {
+  const uploaded =
+    await UploadService.uploadFile(
+      file,
+      "freelancr/resumes"
+    );
+
+  return UserRepository.updateResume(
+    userId,
+    uploaded.secure_url,
+    uploaded.public_id
+  );
+}
+static async addPortfolio(
+  userId: string,
+  title: string,
+  file: Express.Multer.File
+) {
+  const uploaded =
+    await UploadService.uploadFile(
+      file,
+      "freelancr/portfolio"
+    );
+
+  return UserRepository.addPortfolio(
+    userId,
+    {
+      title,
+      image: uploaded.secure_url,
+      publicId: uploaded.public_id,
+    }
+  );
+}
+static async removePortfolio(
+  userId: string,
+  publicId: string
+) {
+  await UploadService.deleteFile(
+    publicId
+  );
+
+  return UserRepository.removePortfolio(
+    userId,
+    publicId
+  );
+}
 }
