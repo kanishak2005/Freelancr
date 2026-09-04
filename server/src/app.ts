@@ -13,8 +13,10 @@ import contractRoutes from "./modules/contracts/contract.routes";
 import paymentRoutes from "./modules/payments/payment.routes";
 import reviewRoutes from "./modules/reviews/review.routes";
 import chatRoutes from "./modules/chat/chat.routes";
-//import notificationRoutes from "./modules/notifications/notification.routes";
+import notificationRoutes from "./modules/notifications/notification.routes";
 import uploadRoutes from "./modules/uploads/upload.routes";
+import adminRoutes from "./modules/admin/admin.routes";
+import analyticsRoutes from "./modules/analytics/analytics.routes";
 
 const app = express();
 
@@ -28,8 +30,13 @@ app.use(
 app.use(helmet());
 app.use(morgan("dev"));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb",
+  })
+);
 app.use(cookieParser());
 app.use(
   "/uploads",
@@ -48,9 +55,11 @@ app.use(
   reviewRoutes
 );
 app.use("/api/v1/chat", chatRoutes);
-//app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/upload", uploadRoutes);
-
+app.use("/api/v1/notifications", notificationRoutes
+);  
+app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
 app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,

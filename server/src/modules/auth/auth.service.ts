@@ -7,6 +7,7 @@ import {
 import { RegisterUserDto, LoginUserDto } from "./auth.types";
 import { ApiError, HTTP_STATUS } from "../../shared";
 import { hashPassword, comparePassword } from "../../utils/bcrypt";
+import { EmailService } from "../../services/email.service";
 
 import {
   generateResetToken,
@@ -221,8 +222,11 @@ static async forgotPassword(email: string) {
     );
   }
 
-  const { plainToken, hashedToken, expires } =
-    generateResetToken();
+  const {
+    plainToken,
+    hashedToken,
+    expires,
+  } = generateResetToken();
 
   await UserRepository.saveResetToken(
     user._id.toString(),
@@ -230,9 +234,18 @@ static async forgotPassword(email: string) {
     expires
   );
 
+  const resetLink =
+    `${process.env.CLIENT_URL || "http://localhost:5173"}` +
+    `/reset-password?token=${plainToken}`;
+
+  await EmailService.sendPasswordResetEmail(
+    user.email,
+    resetLink
+  );
+
   return {
-    message: "Password reset link generated successfully",
-    resetLink: `http://localhost:5173/reset-password?token=${plainToken}`,
+    message:
+      "Password reset link sent successfully",
   };
 }
 
@@ -243,8 +256,9 @@ static async resetPassword(
   const hashedToken = hashResetToken(token);
 
   console.log("================================");
-  console.log("Received Token:", token);
-  console.log("Hashed Token:", hashedToken);
+console.log("Received Token:", token);
+console.log("Hashed Token:", hashedToken);
+console.log("User:", user);
 
   const user = await UserRepository.findByResetToken(hashedToken);
 
