@@ -32,7 +32,7 @@ export class ReviewController {
 
     const review =
       await ReviewService.getReview(
-        req.params.id
+        req.params.id as string
       );
 
 
@@ -51,7 +51,7 @@ export class ReviewController {
 
     const reviews =
       await ReviewService.getFreelancerReviews(
-        req.params.freelancerId
+        req.params.freelancerId as string
       );
 
 
@@ -70,7 +70,7 @@ export class ReviewController {
 
     const review =
       await ReviewService.updateReview(
-        req.params.id,
+        req.params.id  as string,
         req.user!.id,
         req.body
       );
@@ -92,7 +92,7 @@ export class ReviewController {
 
     const result =
       await ReviewService.deleteReview(
-        req.params.id,
+        req.params.id as string,
         req.user!.id
       );
 

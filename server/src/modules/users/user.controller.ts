@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { UserService } from "./user.service";
-import { AuthRequest } from "../../middleware/auth.middleware";
 
 export class UserController {
   static async getProfile(
@@ -40,7 +39,7 @@ export class UserController {
   ) {
     const user =
       await UserService.getUserByUsername(
-        req.params.username
+        req.params.username as string
       );
 
     return res.status(200).json({
@@ -129,7 +128,7 @@ static async removePortfolio(
   const user =
     await UserService.removePortfolio(
       req.user!.id,
-      req.params.publicId
+      req.body.publicId
     );
 
   return res.status(200).json({

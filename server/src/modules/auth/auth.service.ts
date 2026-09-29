@@ -258,7 +258,6 @@ static async resetPassword(
   console.log("================================");
 console.log("Received Token:", token);
 console.log("Hashed Token:", hashedToken);
-console.log("User:", user);
 
   const user = await UserRepository.findByResetToken(hashedToken);
 

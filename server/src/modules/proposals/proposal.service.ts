@@ -1,39 +1,50 @@
 import { ProposalRepository } from "./proposal.repository";
 import { JobRepository } from "../jobs/job.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
-
+import { NotificationService } from "../notifications/notification.service";
 export class ProposalService {
-  static async apply(
-    freelancerId: string,
-    data: any
-  ) {
-    const job = await JobRepository.findById(data.job);
+ static async apply(
+  freelancerId: string,
+  data: any
+) {
+  const job = await JobRepository.findById(data.job);
 
-    if (!job) {
-      throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Job not found"
-      );
-    }
+  if (!job) {
+    throw new ApiError(
+      HTTP_STATUS.NOT_FOUND,
+      "Job not found"
+    );
+  }
 
-    const existing =
-      await ProposalRepository.findExisting(
-        data.job,
-        freelancerId
-      );
+  const existing =
+    await ProposalRepository.findExisting(
+      data.job,
+      freelancerId
+    );
 
-    if (existing) {
-      throw new ApiError(
-        HTTP_STATUS.BAD_REQUEST,
-        "You have already applied for this job"
-      );
-    }
+  if (existing) {
+    throw new ApiError(
+      HTTP_STATUS.BAD_REQUEST,
+      "You have already applied for this job"
+    );
+  }
 
-    return ProposalRepository.create({
+  const proposal =
+    await ProposalRepository.create({
       ...data,
       freelancer: freelancerId,
     });
-  }
+
+  await NotificationService.createNotification({
+    recipient: job.client._id,
+    sender: freelancerId,
+    title: "New Proposal Received",
+    message: `A freelancer has submitted a proposal for your job "${job.title}".`,
+    type: "proposal",
+  });
+
+  return proposal;
+}
 
   static async getProposal(id: string) {
     const proposal =

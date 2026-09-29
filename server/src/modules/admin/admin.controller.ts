@@ -48,7 +48,7 @@ export class AdminController {
 
     const user =
       await AdminService.getUser(
-        req.params.id
+        req.params.id as string
       );
 
     return res.status(200).json({
@@ -65,7 +65,7 @@ export class AdminController {
 
     const user =
       await AdminService.updateUserStatus(
-        req.params.id,
+        req.params.id as string,
         req.body.isActive
       );
 
@@ -84,7 +84,7 @@ export class AdminController {
 
     const user =
       await AdminService.verifyUser(
-        req.params.id
+        req.params.id as string
       );
 
     return res.status(200).json({
@@ -102,7 +102,7 @@ export class AdminController {
 
     const result =
       await AdminService.deleteUser(
-        req.params.id
+        req.params.id as string
       );
 
     return res.status(200).json({
@@ -138,7 +138,7 @@ export class AdminController {
 
     const job =
       await AdminService.updateJobStatus(
-        req.params.id,
+        req.params.id as string,
         req.body.status
       );
 
@@ -157,7 +157,7 @@ export class AdminController {
 
     const result =
       await AdminService.deleteJob(
-        req.params.id
+        req.params.id as string
       );
 
     return res.status(200).json({

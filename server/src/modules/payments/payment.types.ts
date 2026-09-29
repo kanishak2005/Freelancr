@@ -12,7 +12,7 @@ export interface IPayment extends Document {
   freelancer: Types.ObjectId;
 
   amount: number;
-  currency: string;
+  currency: "INR";
 
   razorpayOrderId: string;
   razorpayPaymentId?: string;

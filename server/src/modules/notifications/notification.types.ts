@@ -1,49 +1,24 @@
-import { Schema, model } from "mongoose";
+import { Types } from "mongoose";
 
-const NotificationSchema = new Schema(
-  {
-    recipient: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    sender: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-    title: String,
-    message: String,
-    type: String,
-    isRead: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+export type NotificationType =
+  | "proposal"
+  | "contract"
+  | "payment"
+  | "review"
+  | "message"
+  | "job"
+  | "system";
 
-// ================= INDEXES =================
+export interface CreateNotificationData {
+  recipient: string | Types.ObjectId;
+  sender?: string | Types.ObjectId;
+  title: string;
+  message: string;
+  type: NotificationType;
+}
 
-NotificationSchema.index({ recipient: 1 });
-NotificationSchema.index({
-  recipient: 1,
-  type: 1,
-});
-
-NotificationSchema.index({
-  recipient: 1,
-  isRead: 1,
-});
-
-NotificationSchema.index({
-  createdAt: -1,
-});
-
-// ===========================================
-
-export const Notification = model(
-  "Notification",
-  NotificationSchema
-);
+export interface NotificationQuery {
+  page?: number;
+  limit?: number;
+  isRead?: boolean;
+}

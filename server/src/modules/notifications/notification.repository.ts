@@ -35,9 +35,9 @@ export class NotificationRepository {
 
         Notification.find(filter)
           .populate(
-            "sender",
-            "name username avatar"
-          )
+  "sender",
+  "fullName username avatar"
+)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
@@ -63,9 +63,9 @@ export class NotificationRepository {
 
     return Notification.findById(id)
       .populate(
-        "sender",
-        "name username avatar"
-      );
+  "sender",
+  "fullName username avatar"
+);
   }
 
   static async markAsRead(

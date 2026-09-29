@@ -2,10 +2,18 @@ import { ContractRepository } from "./contract.repository";
 import { ProposalRepository } from "../proposals/proposal.repository";
 import { JobRepository } from "../jobs/job.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
-
+import { NotificationService } from "../notifications/notification.service";
 export class ContractService {
-  static async createContract(clientId: string, data: any) {
-    const proposal = await ProposalRepository.findById(data.proposal);
+
+  static async createFromProposal(
+    clientId: string,
+    proposalId: string
+  )
+   
+  {
+
+    const proposal =
+      await ProposalRepository.findById(proposalId);
 
     if (!proposal) {
       throw new ApiError(
@@ -14,9 +22,10 @@ export class ContractService {
       );
     }
 
-    const job = await JobRepository.findById(
-      proposal.job._id.toString()
-    );
+    const job =
+      await JobRepository.findById(
+        proposal.job._id.toString()
+      );
 
     if (!job) {
       throw new ApiError(
@@ -25,20 +34,54 @@ export class ContractService {
       );
     }
 
-    // Handle both populated and unpopulated client field
-    const jobClientId =
-      (job.client as any)._id?.toString() ??
-      job.client.toString();
-
-    console.log("Logged In User :", clientId);
-    console.log("Job Owner      :", jobClientId);
-
-    if (jobClientId !== clientId) {
+    if (
+      job.client._id.toString() !== clientId
+    ) {
       throw new ApiError(
         HTTP_STATUS.FORBIDDEN,
-        "Only the job owner can create a contract"
+        "You are not authorized to accept this proposal"
       );
     }
+
+    if (proposal.status !== "pending") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "This proposal is no longer available"
+      );
+    }
+
+    if (job.status !== "open") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "This job is no longer open"
+      );
+    }
+
+    const existingContract =
+  await ContractRepository.findByProposal(
+    proposal._id.toString()
+  );
+
+    if (existingContract) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Contract already exists"
+      );
+    }
+
+    const contract =
+      await ContractRepository.create({
+        job: job._id,
+        proposal: proposal._id,
+        client: clientId as any,
+        freelancer: proposal.freelancer._id,
+        title: job.title,
+        description: job.description,
+        amount: proposal.bidAmount,
+        deliveryTime: proposal.deliveryTime,
+        status: "active",
+        startDate: new Date(),
+      });
 
     await ProposalRepository.updateStatus(
       proposal._id.toString(),
@@ -46,103 +89,75 @@ export class ContractService {
     );
 
     await JobRepository.updateStatus(
-      job._id.toString(),
-      "in_progress"
+  job._id.toString(),
+  "in_progress"
+);
+
+await NotificationService.createNotification({
+  recipient: proposal.freelancer._id,
+  sender: clientId,
+  title: "Proposal Accepted",
+  message: `Your proposal for the job "${job.title}" has been accepted.`,
+  type: "contract",
+});
+
+return contract;
+  }
+
+
+ static async getContract(
+  id: string,
+  userId: string
+) {
+  const contract =
+    await ContractRepository.findById(id);
+
+  if (!contract) {
+    throw new ApiError(
+      HTTP_STATUS.NOT_FOUND,
+      "Contract not found"
     );
-
-    return ContractRepository.create({
-      client: clientId,
-      freelancer: proposal.freelancer._id,
-      proposal: proposal._id,
-      job: proposal.job._id,
-      title: job.title,
-      description: job.description,
-      agreedAmount: proposal.bidAmount,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      status: "pending",
-    });
   }
 
-  static async getContract(id: string) {
-    const contract = await ContractRepository.findById(id);
+  const clientId =
+    (contract.client as any)._id?.toString() ??
+    contract.client.toString();
 
-    if (!contract) {
-      throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Contract not found"
-      );
-    }
+  const freelancerId =
+    (contract.freelancer as any)._id?.toString() ??
+    contract.freelancer.toString();
 
-    return contract;
-  }
-
-  static async getMyContracts(userId: string) {
-    return ContractRepository.findAllByUser(userId);
-  }
-
-  static async updateContract(
-    id: string,
-    userId: string,
-    data: any
+  if (
+    clientId !== userId &&
+    freelancerId !== userId
   ) {
-    const contract = await ContractRepository.findById(id);
-
-    if (!contract) {
-      throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Contract not found"
-      );
-    }
-
-    const contractClientId =
-      (contract.client as any)._id?.toString() ??
-      contract.client.toString();
-
-    if (contractClientId !== userId) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        "Not authorized"
-      );
-    }
-
-    return ContractRepository.update(id, data);
+    throw new ApiError(
+      HTTP_STATUS.FORBIDDEN,
+      "Not authorized"
+    );
   }
 
-  static async startContract(
-    id: string,
+  return contract;
+}
+
+
+  static async getMyContracts(
     userId: string
   ) {
-    const contract = await ContractRepository.findById(id);
 
-    if (!contract) {
-      throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Contract not found"
-      );
-    }
-
-    const contractClientId =
-      (contract.client as any)._id?.toString() ??
-      contract.client.toString();
-
-    if (contractClientId !== userId) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        "Not authorized"
-      );
-    }
-
-    return ContractRepository.update(id, {
-      status: "active",
-    });
+    return ContractRepository.findAllByUser(
+      userId
+    );
   }
+
 
   static async completeContract(
     id: string,
     userId: string
   ) {
-    const contract = await ContractRepository.findById(id);
+
+    const contract =
+      await ContractRepository.findById(id);
 
     if (!contract) {
       throw new ApiError(
@@ -151,58 +166,112 @@ export class ContractService {
       );
     }
 
-    const contractClientId =
-      (contract.client as any)._id?.toString() ??
-      contract.client.toString();
-
-    if (contractClientId !== userId) {
+    if (
+      contract.client._id.toString() !== userId
+    ) {
       throw new ApiError(
         HTTP_STATUS.FORBIDDEN,
-        "Not authorized"
+        "Only the client can complete the contract"
       );
     }
 
-    await JobRepository.updateStatus(
-      contract.job._id.toString(),
-      "completed"
-    );
+    if (contract.status !== "active") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Contract is not active"
+      );
+    }
 
-    return ContractRepository.update(id, {
-      status: "completed",
-    });
+    const updatedContract =
+      await ContractRepository.update(
+        id,
+        {
+          status: "completed",
+          endDate: new Date(),
+        }
+      );
+
+    await JobRepository.updateStatus(
+  contract.job._id.toString(),
+  "completed"
+);
+
+await NotificationService.createNotification({
+  recipient: contract.freelancer._id,
+  sender: userId,
+  title: "Contract Completed",
+  message: `The contract "${contract.title}" has been completed.`,
+  type: "contract",
+});
+
+return updatedContract;
   }
+
 
   static async cancelContract(
-    id: string,
-    userId: string
-  ) {
-    const contract = await ContractRepository.findById(id);
+  id: string,
+  userId: string
+) {
+  const contract =
+    await ContractRepository.findById(id);
 
-    if (!contract) {
-      throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Contract not found"
-      );
-    }
+  if (!contract) {
+    throw new ApiError(
+      HTTP_STATUS.NOT_FOUND,
+      "Contract not found"
+    );
+  }
 
-    const contractClientId =
-      (contract.client as any)._id?.toString() ??
-      contract.client.toString();
+  const clientId =
+    contract.client._id.toString();
 
-    if (contractClientId !== userId) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        "Not authorized"
-      );
-    }
+  const freelancerId =
+    contract.freelancer._id.toString();
 
-    await JobRepository.updateStatus(
-      contract.job._id.toString(),
-      "open"
+  const isClient =
+    clientId === userId;
+
+  const isFreelancer =
+    freelancerId === userId;
+
+  if (!isClient && !isFreelancer) {
+    throw new ApiError(
+      HTTP_STATUS.FORBIDDEN,
+      "Not authorized"
+    );
+  }
+
+  if (contract.status !== "active") {
+    throw new ApiError(
+      HTTP_STATUS.BAD_REQUEST,
+      "Contract is not active"
+    );
+  }
+
+  // The other participant receives the notification
+  const recipientId = isClient
+    ? freelancerId
+    : clientId;
+
+  const senderId = userId;
+
+  const updatedContract =
+    await ContractRepository.update(
+      id,
+      {
+        status: "cancelled",
+        endDate: new Date(),
+      }
     );
 
-    return ContractRepository.update(id, {
-      status: "cancelled",
-    });
-  }
+  await NotificationService.createNotification({
+    recipient: recipientId,
+    sender: senderId,
+    title: "Contract Cancelled",
+    message: `The contract "${contract.title}" has been cancelled.`,
+    type: "contract",
+  });
+
+  return updatedContract;
+}
 }

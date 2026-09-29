@@ -18,7 +18,7 @@ export class ProposalController {
 
   static async getProposal(req: Request, res: Response) {
     const proposal = await ProposalService.getProposal(
-      req.params.id
+      req.params.id as string
     );
 
     return res.status(200).json({
@@ -48,7 +48,7 @@ export class ProposalController {
   ) {
     const proposals =
       await ProposalService.getJobProposals(
-        req.params.jobId
+        req.params.jobId as string
       );
 
     return res.status(200).json({
@@ -63,7 +63,7 @@ export class ProposalController {
   ) {
     const proposal =
       await ProposalService.updateProposal(
-        req.params.id,
+        req.params.id as string,
         req.user!.id,
         req.body
       );
@@ -81,7 +81,7 @@ export class ProposalController {
   ) {
     const result =
       await ProposalService.withdrawProposal(
-        req.params.id,
+        req.params.id as string,
         req.user!.id
       );
 

@@ -20,7 +20,7 @@ export class JobController {
 
   static async updateJob(req: AuthRequest, res: Response) {
     const job = await JobService.updateJob(
-      req.params.id,
+      req.params.id as string,
       req.user!.id,
       req.body
     );
@@ -34,7 +34,7 @@ export class JobController {
 
   static async deleteJob(req: AuthRequest, res: Response) {
     const result = await JobService.deleteJob(
-      req.params.id,
+      req.params.id as string,
       req.user!.id
     );
 
@@ -45,7 +45,7 @@ export class JobController {
   }
 
   static async getJob(req: Request, res: Response) {
-    const job = await JobService.getJob(req.params.id);
+    const job = await JobService.getJob(req.params.id as string);
 
     return res.status(200).json({
       success: true,

@@ -1,7 +1,9 @@
 import { Router } from "express";
+
 import { PaymentController } from "./payment.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { validate } from "../../middleware/validate.middleware";
+
 import {
   createOrderValidation,
   verifyPaymentValidation,
@@ -19,6 +21,7 @@ router.post(
 
 router.post(
   "/verify",
+  authenticate,
   verifyPaymentValidation,
   validate,
   PaymentController.verify

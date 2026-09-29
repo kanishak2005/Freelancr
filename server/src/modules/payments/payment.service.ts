@@ -1,19 +1,120 @@
-import Razorpay from "razorpay";
 import crypto from "crypto";
+
 import { PaymentRepository } from "./payment.repository";
 import { ContractRepository } from "../contracts/contract.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
-
-import { env } from "../../config/env";
-
 import razorpay from "../../config/razorpay";
-
+import { NotificationService } from "../notifications/notification.service";
+import { env } from "../../config/env";
 export class PaymentService {
+
+  // ==========================================
+  // CREATE RAZORPAY ORDER
+  // ==========================================
+  static async handleWebhook(
+  rawBody: Buffer,
+  signature: string
+) {
+  if (!signature) {
+    throw new ApiError(400, "Missing Razorpay webhook signature");
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", env.RAZORPAY_WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest("hex");
+
+  const expectedBuffer = Buffer.from(expectedSignature);
+  const receivedBuffer = Buffer.from(signature);
+
+  if (
+    expectedBuffer.length !== receivedBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+  ) {
+    throw new ApiError(400, "Invalid webhook signature");
+  }
+
+  const payload = JSON.parse(rawBody.toString("utf8"));
+
+  const event = payload.event;
+
+  console.log("Razorpay webhook received:", event);
+
+  if (event === "payment.captured") {
+    const paymentEntity = payload.payload?.payment?.entity;
+
+    if (!paymentEntity) {
+      throw new ApiError(400, "Invalid payment webhook payload");
+    }
+
+    const orderId = paymentEntity.order_id;
+    const paymentId = paymentEntity.id;
+
+    if (!orderId) {
+      throw new ApiError(400, "Order ID missing from webhook");
+    }
+
+    const payment = await PaymentRepository.findByOrderId(orderId);
+
+    if (!payment) {
+      throw new ApiError(404, "Payment record not found");
+    }
+
+    if (payment.status === "paid") {
+      return;
+    }
+
+    await PaymentRepository.updateByOrderId(orderId, {
+      razorpayPaymentId: paymentId,
+      status: "paid",
+      paidAt: new Date(),
+    });
+
+    console.log(
+      `Payment ${orderId} marked as paid through webhook`
+    );
+  }
+
+  if (event === "payment.failed") {
+    const paymentEntity = payload.payload?.payment?.entity;
+
+    if (!paymentEntity) {
+      throw new ApiError(400, "Invalid payment webhook payload");
+    }
+
+    const orderId = paymentEntity.order_id;
+
+    if (!orderId) {
+      return;
+    }
+
+    const payment = await PaymentRepository.findByOrderId(orderId);
+
+    if (!payment) {
+      return;
+    }
+
+    if (payment.status === "paid") {
+      return;
+    }
+
+    await PaymentRepository.updateByOrderId(orderId, {
+      status: "failed",
+    });
+
+    console.log(
+      `Payment ${orderId} marked as failed through webhook`
+    );
+  }
+}
+
   static async createOrder(
     userId: string,
     contractId: string
   ) {
-    const contract = await ContractRepository.findById(contractId);
+
+    const contract =
+      await ContractRepository.findById(contractId);
 
     if (!contract) {
       throw new ApiError(
@@ -22,6 +123,7 @@ export class PaymentService {
       );
     }
 
+    // Verify that the logged-in user is the client
     const clientId =
       (contract.client as any)._id?.toString() ??
       contract.client.toString();
@@ -29,26 +131,68 @@ export class PaymentService {
     if (clientId !== userId) {
       throw new ApiError(
         HTTP_STATUS.FORBIDDEN,
-        "Only client can pay"
+        "Only the client can make this payment"
       );
     }
 
+    // Payment is only allowed for active contracts
+    if (contract.status !== "active") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Payment can only be made for an active contract"
+      );
+    }
+
+    // Check whether this contract is already paid
+    const existingPayments =
+      await PaymentRepository.findByUser(userId);
+
+    const alreadyPaid =
+      existingPayments.some(
+        (payment: any) =>
+          payment.contract?._id?.toString() ===
+            contract._id.toString() &&
+          payment.status === "paid"
+      );
+
+    if (alreadyPaid) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "This contract has already been paid"
+      );
+    }
+
+    // IMPORTANT:
+    // Amount comes from the contract, not the frontend.
+    const amount = contract.amount;
+
+    if (!amount || amount <= 0) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid contract amount"
+      );
+    }
+
+    // Razorpay uses paise
     const options = {
-      amount: contract.agreedAmount * 100,
+      amount: Math.round(amount * 100),
       currency: "INR",
       receipt: `contract_${contract._id}`,
     };
 
-    const order = await razorpay.orders.create(options);
+    const order =
+      await razorpay.orders.create(options);
 
-    const payment = await PaymentRepository.create({
-      contract: contract._id,
-      client: contract.client,
-      freelancer: contract.freelancer,
-      amount: contract.agreedAmount,
-      razorpayOrderId: order.id,
-      status: "created",
-    });
+    const payment =
+      await PaymentRepository.create({
+        contract: contract._id,
+        client: contract.client,
+        freelancer: contract.freelancer,
+        amount,
+        currency: "INR",
+        razorpayOrderId: order.id,
+        status: "created",
+      });
 
     return {
       payment,
@@ -56,34 +200,173 @@ export class PaymentService {
     };
   }
 
+
+  // ==========================================
+  // VERIFY RAZORPAY PAYMENT
+  // ==========================================
+
   static async verifyPayment(
+  userId: string,
   razorpay_order_id: string,
   razorpay_payment_id: string,
   razorpay_signature: string
 ) {
-  const payment =
-    await PaymentRepository.findByOrderId(
-      razorpay_order_id
-    );
 
-  if (!payment) {
-    throw new ApiError(
-      HTTP_STATUS.NOT_FOUND,
-      "Payment not found"
-    );
-  }
+    const payment =
+      await PaymentRepository.findByOrderId(
+        razorpay_order_id
+      );
+      const paymentData = payment as any;
 
-  await PaymentRepository.markPaid(
-    razorpay_order_id,
-    razorpay_payment_id
+const clientId =
+  paymentData.client?._id?.toString() ??
+  paymentData.client?.toString();
+
+const freelancerId =
+  paymentData.freelancer?._id?.toString() ??
+  paymentData.freelancer?.toString();
+
+if (clientId !== userId) {
+  throw new ApiError(
+    HTTP_STATUS.FORBIDDEN,
+    "You are not authorized to verify this payment"
   );
-
-  return {
-    message: "Payment successful (DEV MODE)",
-  };
 }
 
-  static async getPayment(id: string) {
+    if (!payment) {
+      throw new ApiError(
+        HTTP_STATUS.NOT_FOUND,
+        "Payment not found"
+      );
+    }
+
+    // Prevent duplicate verification
+    if (payment.status === "paid") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Payment has already been verified"
+      );
+    }
+
+    const secret =
+      process.env.RAZORPAY_KEY_SECRET;
+
+    if (!secret) {
+      throw new ApiError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Razorpay secret is not configured"
+      );
+    }
+
+    // Generate expected Razorpay signature
+    const generatedSignature =
+  crypto
+    .createHmac("sha256", secret)
+    .update(
+      `${payment.razorpayOrderId}|${razorpay_payment_id}`
+    )
+    .digest("hex");
+
+    // Compare signatures safely
+    const expectedBuffer =
+      Buffer.from(generatedSignature);
+
+    const receivedBuffer =
+      Buffer.from(razorpay_signature);
+
+    if (
+      expectedBuffer.length !==
+      receivedBuffer.length
+    ) {
+      await PaymentRepository.updateByOrderId(
+        payment.razorpayOrderId,
+        {
+          status: "failed",
+        }
+      );
+
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid payment signature"
+      );
+    }
+
+    const isValid =
+      crypto.timingSafeEqual(
+        expectedBuffer,
+        receivedBuffer
+      );
+
+    if (!isValid) {
+      await PaymentRepository.updateByOrderId(
+        razorpay_order_id,
+        {
+          status: "failed",
+        }
+      );
+
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid payment signature"
+      );
+    }
+
+    // Signature is valid
+    const updatedPayment =
+      await PaymentRepository.updateByOrderId(
+        razorpay_order_id,
+        {
+          razorpayPaymentId:
+            razorpay_payment_id,
+
+          razorpaySignature:
+            razorpay_signature,
+
+          status: "paid",
+
+          paidAt: new Date(),
+        }
+      );
+      if (updatedPayment) {
+  const contract =
+    await ContractRepository.findById(
+      updatedPayment.contract.toString()
+    );
+
+  if (contract) {
+    await NotificationService.createNotification({
+      recipient: contract.freelancer,
+      sender: contract.client,
+      title: "Payment Received",
+      message: `Payment for the contract "${contract.title}" has been received.`,
+      type: "payment",
+    });
+  }
+}
+      await NotificationService.createNotification({
+  recipient: payment.freelancer.toString(),
+  sender: payment.client.toString(),
+  title: "Payment Received",
+  message: `Payment of ₹${payment.amount} has been successfully received for the contract "${(payment.contract as any).title}".`,
+  type: "payment",
+});
+
+    return {
+      message: "Payment verified successfully",
+      payment: updatedPayment,
+    };
+  }
+
+
+  // ==========================================
+  // GET PAYMENT
+  // ==========================================
+
+  static async getPayment(
+    id: string,
+    userId: string
+  ) {
+
     const payment =
       await PaymentRepository.findById(id);
 
@@ -94,14 +377,51 @@ export class PaymentService {
       );
     }
 
+    const clientId =
+      (payment.client as any)._id?.toString() ??
+      payment.client.toString();
+
+    const freelancerId =
+      (payment.freelancer as any)._id?.toString() ??
+      payment.freelancer.toString();
+
+    if (
+      clientId !== userId &&
+      freelancerId !== userId
+    ) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "Not authorized to view this payment"
+      );
+    }
+
     return payment;
   }
 
-  static async getMyPayments(userId: string) {
-    return PaymentRepository.findByUser(userId);
+
+  // ==========================================
+  // GET MY PAYMENTS
+  // ==========================================
+
+  static async getMyPayments(
+    userId: string
+  ) {
+
+    return PaymentRepository.findByUser(
+      userId
+    );
   }
 
-  static async refund(id: string) {
+
+  // ==========================================
+  // REFUND PAYMENT
+  // ==========================================
+
+  static async refund(
+    id: string,
+    userId: string
+  ) {
+
     const payment =
       await PaymentRepository.findById(id);
 
@@ -109,6 +429,17 @@ export class PaymentService {
       throw new ApiError(
         HTTP_STATUS.NOT_FOUND,
         "Payment not found"
+      );
+    }
+
+    const clientId =
+      (payment.client as any)._id?.toString() ??
+      payment.client.toString();
+
+    if (clientId !== userId) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "Only the client can request a refund"
       );
     }
 
@@ -119,15 +450,47 @@ export class PaymentService {
       );
     }
 
-    // Razorpay refund API can be integrated here later.
+    if (!payment.razorpayPaymentId) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Razorpay payment ID is missing"
+      );
+    }
 
-    await PaymentRepository.updateStatus(
-      id,
-      "refunded"
-    );
+    // Actual Razorpay refund
+    const razorpayPayment =
+  await razorpay.payments.fetch(
+    payment.razorpayPaymentId
+  );
+
+console.log(
+  "RAZORPAY PAYMENT:",
+  JSON.stringify(razorpayPayment, null, 2)
+);
+    const refund = await razorpay.payments.refund(
+  payment.razorpayPaymentId,
+  {
+    amount: Math.round(payment.amount * 100),
+  }
+);
+    const updatedPayment =
+      await PaymentRepository.updateStatus(
+        id,
+        "refunded"
+      );
+      if (updatedPayment) {
+  await NotificationService.createNotification({
+    recipient: payment.freelancer,
+    sender: payment.client,
+    title: "Payment Refunded",
+    message: `The payment for the contract "${(payment.contract as any).title}" has been refunded.`,
+    type: "payment",
+  });
+}
 
     return {
       message: "Payment refunded successfully",
+      payment: updatedPayment,
     };
   }
 }

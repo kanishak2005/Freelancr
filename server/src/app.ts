@@ -17,6 +17,8 @@ import notificationRoutes from "./modules/notifications/notification.routes";
 import uploadRoutes from "./modules/uploads/upload.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
+import { errorMiddleware } from "./middleware/error.middleware";
+import { PaymentController } from "./modules/payments/payment.controller";
 
 const app = express();
 
@@ -29,6 +31,11 @@ app.use(
 
 app.use(helmet());
 app.use(morgan("dev"));
+app.post(
+  "/api/v1/payments/webhook",
+  express.raw({ type: "application/json" }),
+  PaymentController.webhook
+);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(
@@ -76,5 +83,6 @@ app.get("/api/v1/health", (_req, res) => {
     version: "v1",
   });
 });
+app.use(errorMiddleware);
 
 export default app;

@@ -52,10 +52,10 @@ export class NotificationController {
   ) {
 
     const notification =
-      await NotificationService.getNotification(
-        req.params.id,
-        req.user!.id
-      );
+  await NotificationService.getNotification(
+    String(req.params.id as string),
+    req.user!.id
+  );
 
     return res.status(200).json({
       success: true,
@@ -69,10 +69,10 @@ export class NotificationController {
   ) {
 
     const notification =
-      await NotificationService.markAsRead(
-        req.params.id,
-        req.user!.id
-      );
+  await NotificationService.markAsRead(
+    String(req.params.id as string),
+    req.user!.id
+  );
 
     return res.status(200).json({
       success: true,
@@ -122,10 +122,10 @@ export class NotificationController {
   ) {
 
     const result =
-      await NotificationService.deleteNotification(
-        req.params.id,
-        req.user!.id
-      );
+  await NotificationService.deleteNotification(
+    String(req.params.id as string),
+    req.user!.id
+  );
 
     return res.status(200).json({
       success: true,

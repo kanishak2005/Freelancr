@@ -58,16 +58,16 @@ export class AdminService {
       }),
 
       Job.countDocuments({
-        status: "in_progress",
-      }),
+  status: "in_progress",
+} as any),
 
-      Job.countDocuments({
-        status: "completed",
-      }),
+Job.countDocuments({
+  status: "completed",
+} as any),
 
-      Job.countDocuments({
-        status: "cancelled",
-      }),
+Job.countDocuments({
+  status: "cancelled",
+} as any),
     ]);
 
     return {

@@ -1,7 +1,7 @@
 import { ReviewRepository } from "./review.repository";
 import { ContractRepository } from "../contracts/contract.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
-
+import { Types } from "mongoose";
 export class ReviewService {
 
   static async createReview(
@@ -60,7 +60,7 @@ export class ReviewService {
 
     return ReviewRepository.create({
       contract: data.contract,
-      client: clientId,
+      client: new Types.ObjectId(clientId),
       freelancer: contract.freelancer,
       rating: data.rating,
       comment: data.comment,

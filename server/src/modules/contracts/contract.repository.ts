@@ -13,6 +13,17 @@ export class ContractRepository {
       .populate("job")
       .populate("proposal");
   }
+  static async findByProposal(
+  proposalId: string
+) {
+  return Contract.findOne({
+    proposal: proposalId,
+  })
+    .populate("client", "fullName username avatar")
+    .populate("freelancer", "fullName username avatar")
+    .populate("job")
+    .populate("proposal");
+}
 
   static async findByClient(clientId: string) {
     return Contract.find({

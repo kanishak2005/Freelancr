@@ -1,20 +1,8 @@
-import mongoose, { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 import { IContract } from "./contract.types";
 
 const contractSchema = new Schema<IContract>(
   {
-    client: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    freelancer: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
     job: {
       type: Schema.Types.ObjectId,
       ref: "Job",
@@ -27,6 +15,18 @@ const contractSchema = new Schema<IContract>(
       required: true,
     },
 
+    client: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    freelancer: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     title: {
       type: String,
       required: true,
@@ -35,34 +35,39 @@ const contractSchema = new Schema<IContract>(
 
     description: {
       type: String,
-      required: true,
+      default: "",
     },
 
-    agreedAmount: {
+    amount: {
       type: Number,
       required: true,
       min: 1,
     },
 
-    startDate: {
-      type: Date,
+    deliveryTime: {
+      type: Number,
       required: true,
-    },
-
-    endDate: {
-      type: Date,
-      required: true,
+      min: 1,
     },
 
     status: {
       type: String,
       enum: [
-        "pending",
         "active",
         "completed",
         "cancelled",
+        "disputed",
       ],
-      default: "pending",
+      default: "active",
+    },
+
+    startDate: {
+      type: Date,
+      default: Date.now,
+    },
+
+    endDate: {
+      type: Date,
     },
   },
   {
@@ -70,7 +75,7 @@ const contractSchema = new Schema<IContract>(
   }
 );
 
-export const Contract = mongoose.model<IContract>(
+export const Contract = model<IContract>(
   "Contract",
   contractSchema
 );

@@ -93,6 +93,12 @@ static async addPortfolio(
   title: string,
   file: Express.Multer.File
 ) {
+  if (!title?.trim()) {
+  throw new ApiError(
+    HTTP_STATUS.BAD_REQUEST,
+    "Portfolio title is required"
+  );
+}
   const uploaded =
     await UploadService.uploadFile(
       file,

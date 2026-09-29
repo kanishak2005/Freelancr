@@ -21,6 +21,9 @@ export const env = {
   RAZORPAY_KEY_SECRET:
     process.env.RAZORPAY_KEY_SECRET || "",
 
+  RAZORPAY_WEBHOOK_SECRET: 
+    process.env.RAZORPAY_WEBHOOK_SECRET || "",
+
   CLOUDINARY_CLOUD_NAME:
     process.env.CLOUDINARY_CLOUD_NAME || "",
 

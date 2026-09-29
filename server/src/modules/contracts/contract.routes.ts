@@ -1,7 +1,11 @@
 import { Router } from "express";
+
 import { ContractController } from "./contract.controller";
+
 import { authenticate } from "../../middleware/auth.middleware";
+
 import { validate } from "../../middleware/validate.middleware";
+
 import {
   createContractValidation,
 } from "./contract.validation";
@@ -26,18 +30,6 @@ router.get(
   "/:id",
   authenticate,
   ContractController.get
-);
-
-router.patch(
-  "/:id",
-  authenticate,
-  ContractController.update
-);
-
-router.patch(
-  "/:id/start",
-  authenticate,
-  ContractController.start
 );
 
 router.patch(

@@ -111,7 +111,7 @@ static async forgotPassword(
     success: true,
     message: result.message,
     data: {
-      resetLink: result.resetLink,
+
     },
   });
 }

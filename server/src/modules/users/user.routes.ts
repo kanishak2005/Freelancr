@@ -51,7 +51,7 @@ router.post(
 );
 
 router.delete(
-  "/portfolio/:publicId",
+  "/portfolio",
   authenticate,
   UserController.removePortfolio
 );

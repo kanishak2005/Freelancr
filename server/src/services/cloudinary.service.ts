@@ -5,7 +5,7 @@ export class CloudinaryService {
   static uploadStream(
     options: {
       folder: string;
-      resourceType?: string;
+      resourceType?: "auto" | "image" | "raw" | "video";
     },
     callback: (
       error: any,

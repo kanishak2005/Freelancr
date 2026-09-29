@@ -1,33 +1,28 @@
 import { Document, Types } from "mongoose";
 
 export type ContractStatus =
-  | "pending"
   | "active"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "disputed";
 
 export interface IContract extends Document {
+  job: Types.ObjectId;
+  proposal: Types.ObjectId;
   client: Types.ObjectId;
-
   freelancer: Types.ObjectId;
 
-  job: Types.ObjectId;
-
-  proposal: Types.ObjectId;
-
   title: string;
-
   description: string;
 
-  agreedAmount: number;
-
-  startDate: Date;
-
-  endDate: Date;
+  amount: number;
+  deliveryTime: number;
 
   status: ContractStatus;
 
-  createdAt: Date;
+  startDate: Date;
+  endDate?: Date;
 
+  createdAt: Date;
   updatedAt: Date;
 }

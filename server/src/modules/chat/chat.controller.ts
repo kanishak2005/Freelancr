@@ -28,7 +28,7 @@ export class ChatController {
     const chats =
       await ChatService.getConversation(
         req.user!.id,
-        req.params.userId
+        req.params.userId as string
       );
 
     return res.status(200).json({
@@ -43,7 +43,7 @@ export class ChatController {
   ) {
     const chat =
       await ChatService.getMessage(
-        req.params.id
+        req.params.id as string
       );
 
     return res.status(200).json({
@@ -58,7 +58,7 @@ export class ChatController {
   ) {
     const result =
       await ChatService.deleteMessage(
-        req.params.id,
+        req.params.id as string,
         req.user!.id
       );
 

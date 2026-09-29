@@ -1,6 +1,7 @@
 import { ChatRepository } from "./chat.repository";
 import { UserRepository } from "../users/user.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
+import { Types } from "mongoose";
 
 export class ChatService {
   static async sendMessage(
@@ -18,7 +19,7 @@ export class ChatService {
     }
 
     return ChatRepository.create({
-      sender: senderId,
+      sender: new Types.ObjectId(senderId),
       receiver: data.receiver,
       message: data.message,
       attachments: data.attachments || [],

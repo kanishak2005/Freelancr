@@ -1,13 +1,18 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { ContractService } from "./contract.service";
 
 export class ContractController {
-  static async create(req: AuthRequest, res: Response) {
-    const contract = await ContractService.createContract(
-      req.user!.id,
-      req.body
-    );
+
+  static async create(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const contract =
+      await ContractService.createFromProposal(
+        req.user!.id,
+        req.body.proposalId
+      );
 
     return res.status(201).json({
       success: true,
@@ -16,10 +21,15 @@ export class ContractController {
     });
   }
 
-  static async get(req: Request, res: Response) {
-    const contract = await ContractService.getContract(
-      req.params.id
-    );
+  static async get(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const contract =
+      await ContractService.getContract(
+        req.params.id as string,
+        req.user!.id
+      );
 
     return res.status(200).json({
       success: true,
@@ -42,48 +52,13 @@ export class ContractController {
     });
   }
 
-  static async update(
-    req: AuthRequest,
-    res: Response
-  ) {
-    const contract =
-      await ContractService.updateContract(
-        req.params.id,
-        req.user!.id,
-        req.body
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Contract updated successfully",
-      data: contract,
-    });
-  }
-
-  static async start(
-    req: AuthRequest,
-    res: Response
-  ) {
-    const contract =
-      await ContractService.startContract(
-        req.params.id,
-        req.user!.id
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Contract started successfully",
-      data: contract,
-    });
-  }
-
   static async complete(
     req: AuthRequest,
     res: Response
   ) {
     const contract =
       await ContractService.completeContract(
-        req.params.id,
+        req.params.id as string,
         req.user!.id
       );
 
@@ -100,7 +75,7 @@ export class ContractController {
   ) {
     const contract =
       await ContractService.cancelContract(
-        req.params.id,
+        req.params.id as string,
         req.user!.id
       );
 

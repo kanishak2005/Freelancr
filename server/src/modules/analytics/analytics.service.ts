@@ -63,28 +63,28 @@ export class AnalyticsService {
       }),
 
       Job.countDocuments({
-        status: "in_progress",
-      }),
+  status: "in_progress",
+} as any),
 
-      Job.countDocuments({
-        status: "completed",
-      }),
+Job.countDocuments({
+  status: "completed",
+} as any),
 
-      Job.countDocuments({
-        status: "cancelled",
-      }),
+Job.countDocuments({
+  status: "cancelled",
+} as any),
 
       Proposal.countDocuments(),
 
       Contract.countDocuments(),
 
       Contract.countDocuments({
-        status: "active",
-      }),
+  status: "active",
+} as any),
 
-      Contract.countDocuments({
-        status: "completed",
-      }),
+Contract.countDocuments({
+  status: "completed",
+} as any),
 
       Payment.countDocuments(),
 
@@ -212,16 +212,16 @@ export class AnalyticsService {
       }),
 
       Job.countDocuments({
-        status: "in_progress",
-      }),
+  status: "in_progress",
+} as any),
 
-      Job.countDocuments({
-        status: "completed",
-      }),
+Job.countDocuments({
+  status: "completed",
+} as any),
 
-      Job.countDocuments({
-        status: "cancelled",
-      }),
+Job.countDocuments({
+  status: "cancelled",
+} as any),
     ]);
 
 
