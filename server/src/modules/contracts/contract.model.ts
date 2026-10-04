@@ -13,6 +13,7 @@ const contractSchema = new Schema<IContract>(
       type: Schema.Types.ObjectId,
       ref: "Proposal",
       required: true,
+      unique: true,
     },
 
     client: {
@@ -79,3 +80,4 @@ export const Contract = model<IContract>(
   "Contract",
   contractSchema
 );
+

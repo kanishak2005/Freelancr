@@ -1,17 +1,14 @@
 import { Router } from "express";
+
 import { ReviewController } from "./review.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { validate } from "../../middleware/validate.middleware";
-import {
-  createReviewValidation,
-  updateReviewValidation,
-} from "./review.validation";
-
+import { createReviewValidation } from "./review.validation";
 
 const router = Router();
 
 
-
+// Create review
 router.post(
   "/",
   authenticate,
@@ -21,37 +18,33 @@ router.post(
 );
 
 
+// Get reviews written for a user
+router.get(
+  "/user/:userId",
+  ReviewController.getUserReviews
+);
 
+
+// Get reviews for a job
+router.get(
+  "/job/:jobId",
+  ReviewController.getJobReviews
+);
+
+
+// Get reviews for a contract
+router.get(
+  "/contract/:contractId",
+  authenticate,
+  ReviewController.getContractReviews
+);
+
+
+// Get single review
 router.get(
   "/:id",
   ReviewController.getReview
 );
-
-
-
-router.get(
-  "/freelancer/:freelancerId",
-  ReviewController.getFreelancerReviews
-);
-
-
-
-router.patch(
-  "/:id",
-  authenticate,
-  updateReviewValidation,
-  validate,
-  ReviewController.updateReview
-);
-
-
-
-router.delete(
-  "/:id",
-  authenticate,
-  ReviewController.deleteReview
-);
-
 
 
 export default router;

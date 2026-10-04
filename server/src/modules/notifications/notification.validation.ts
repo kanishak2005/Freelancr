@@ -1,30 +1,4 @@
-import { body, param, query } from "express-validator";
-
-export const createNotificationValidation = [
-  body("recipient")
-    .notEmpty()
-    .withMessage("Recipient is required"),
-
-  body("title")
-    .trim()
-    .notEmpty()
-    .withMessage("Title is required"),
-
-  body("message")
-    .trim()
-    .notEmpty()
-    .withMessage("Message is required"),
-
-  body("type")
-    .trim()
-    .notEmpty()
-    .withMessage("Notification type is required"),
-
-  body("sender")
-    .optional()
-    .isMongoId()
-    .withMessage("Invalid sender ID"),
-];
+import { param, query } from "express-validator";
 
 export const notificationIdValidation = [
   param("id")

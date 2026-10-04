@@ -2,6 +2,6 @@ import { body } from "express-validator";
 
 export const createContractValidation = [
   body("proposalId")
-    .notEmpty()
-    .withMessage("Proposal ID is required"),
+    .isMongoId()
+    .withMessage("Valid proposal ID is required"),
 ];

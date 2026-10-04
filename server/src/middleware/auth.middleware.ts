@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+
 import { UserRepository } from "../modules/users/user.repository";
 
 export interface AuthRequest extends Request {
@@ -7,6 +8,11 @@ export interface AuthRequest extends Request {
     id: string;
     role: string;
   };
+}
+
+interface AccessTokenPayload {
+  id: string;
+  role?: string;
 }
 
 export const authenticate = async (
@@ -24,15 +30,37 @@ export const authenticate = async (
       });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = authHeader.substring(7).trim();
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Access token missing",
+      });
+    }
+
+    const secret = process.env.JWT_ACCESS_SECRET;
+
+    if (!secret) {
+      console.error("JWT_ACCESS_SECRET is not configured");
+
+      return res.status(500).json({
+        success: false,
+        message: "Server authentication configuration error",
+      });
+    }
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_ACCESS_SECRET as string
-    ) as {
-      id: string;
-      role: string;
-    };
+      secret
+    ) as AccessTokenPayload;
+
+    if (!decoded.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid access token",
+      });
+    }
 
     const user = await UserRepository.findById(decoded.id);
 
@@ -43,13 +71,20 @@ export const authenticate = async (
       });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated",
+      });
+    }
+
     req.user = {
-      id: decoded.id,
-      role: decoded.role,
+      id: user._id.toString(),
+      role: user.role,
     };
 
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",

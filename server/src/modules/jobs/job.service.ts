@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { JobRepository } from "./job.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
 
@@ -6,10 +7,17 @@ export class JobService {
     clientId: string,
     data: any
   ) {
-    return JobRepository.create({
-      ...data,
-      client: clientId,
-    });
+    const jobData = {
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      budget: data.budget,
+      budgetType: data.budgetType,
+      experienceLevel: data.experienceLevel,
+      client: new Types.ObjectId(clientId),
+    };
+
+    return JobRepository.create(jobData);
   }
 
   static async updateJob(
@@ -33,7 +41,28 @@ export class JobService {
       );
     }
 
-    return JobRepository.update(jobId, data);
+    const updateData: Record<string, unknown> = {};
+
+    if (data.title !== undefined) {
+      updateData.title = data.title;
+    }
+
+    if (data.description !== undefined) {
+      updateData.description = data.description;
+    }
+
+    if (data.category !== undefined) {
+      updateData.category = data.category;
+    }
+
+    if (data.budget !== undefined) {
+      updateData.budget = data.budget;
+    }
+
+    return JobRepository.update(
+      jobId,
+      updateData
+    );
   }
 
   static async deleteJob(
@@ -93,6 +122,51 @@ export class JobService {
   }
 
   static async filterJobs(filters: any) {
-    return JobRepository.filter(filters);
+    const allowedFilters: Record<string, unknown> = {};
+
+    if (
+      typeof filters.category === "string" &&
+      filters.category.trim()
+    ) {
+      allowedFilters.category =
+        filters.category.trim();
+    }
+
+    if (
+      typeof filters.budgetType === "string" &&
+      ["fixed", "hourly"].includes(
+        filters.budgetType
+      )
+    ) {
+      allowedFilters.budgetType =
+        filters.budgetType;
+    }
+
+    if (
+      typeof filters.experienceLevel === "string" &&
+      ["entry", "intermediate", "expert"].includes(
+        filters.experienceLevel
+      )
+    ) {
+      allowedFilters.experienceLevel =
+        filters.experienceLevel;
+    }
+
+    if (
+      typeof filters.status === "string" &&
+      [
+        "open",
+        "in-progress",
+        "completed",
+        "cancelled",
+      ].includes(filters.status)
+    ) {
+      allowedFilters.status =
+        filters.status;
+    }
+
+    return JobRepository.filter(
+      allowedFilters
+    );
   }
 }

@@ -1,16 +1,30 @@
-import { ReviewRepository } from "./review.repository";
-import { ContractRepository } from "../contracts/contract.repository";
-import { ApiError, HTTP_STATUS } from "../../shared";
-import { Types } from "mongoose";
-export class ReviewService {
+import mongoose from "mongoose";
 
-  static async createReview(
-    clientId: string,
-    data: any
+import reviewRepository from "./review.repository";
+
+import { Contract } from "../contracts/contract.model";
+
+import { ApiError } from "../../shared/ApiError";
+import { HTTP_STATUS } from "../../shared/httpStatus";
+
+class ReviewService {
+  async createReview(
+    reviewerId: string,
+    data: {
+      contract: string;
+      rating: number;
+      comment: string;
+    }
   ) {
+    if (!mongoose.Types.ObjectId.isValid(data.contract)) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid contract ID"
+      );
+    }
 
     const contract =
-      await ContractRepository.findById(
+      await Contract.findById(
         data.contract
       );
 
@@ -21,57 +35,108 @@ export class ReviewService {
       );
     }
 
-
-    const contractClientId =
-      (contract.client as any)._id?.toString()
-      ??
-      contract.client.toString();
-
-
-    if (contractClientId !== clientId) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        "Only client can review"
-      );
-    }
-
-
-    if (contract.status !== "completed") {
+    if (
+      contract.status !== "completed"
+    ) {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
-        "Review allowed only after completion"
+        "Reviews can only be submitted for completed contracts"
       );
     }
 
+    const clientId =
+      contract.client.toString();
+
+    const freelancerId =
+      contract.freelancer.toString();
+
+    let revieweeId: string;
+    let reviewerRole:
+      | "client"
+      | "freelancer";
+
+    if (reviewerId === clientId) {
+      revieweeId = freelancerId;
+      reviewerRole = "client";
+    } else if (
+      reviewerId === freelancerId
+    ) {
+      revieweeId = clientId;
+      reviewerRole = "freelancer";
+    } else {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "You are not a participant of this contract"
+      );
+    }
 
     const existing =
-      await ReviewRepository.findByContract(
+      await reviewRepository.findByReviewerAndContract(
+        reviewerId,
         data.contract
       );
-
 
     if (existing) {
       throw new ApiError(
         HTTP_STATUS.CONFLICT,
-        "Review already exists"
+        "You have already reviewed this contract"
       );
     }
 
+    const jobId =
+      contract.job.toString();
 
-    return ReviewRepository.create({
-      contract: data.contract,
-      client: new Types.ObjectId(clientId),
-      freelancer: contract.freelancer,
-      rating: data.rating,
-      comment: data.comment,
-    });
+    try {
+      const review =
+        await reviewRepository.create({
+          reviewer:
+            new mongoose.Types.ObjectId(
+              reviewerId
+            ),
+          reviewee:
+            new mongoose.Types.ObjectId(
+              revieweeId
+            ),
+          contract:
+            new mongoose.Types.ObjectId(
+              data.contract
+            ),
+          job:
+            new mongoose.Types.ObjectId(
+              jobId
+            ),
+          rating: data.rating,
+          comment: data.comment,
+          reviewerRole,
+        });
+
+      return review;
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        throw new ApiError(
+          HTTP_STATUS.CONFLICT,
+          "You have already reviewed this contract"
+        );
+      }
+
+      throw error;
+    }
   }
 
-
-  static async getReview(id: string) {
+  async getReview(
+    reviewId: string
+  ) {
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid review ID"
+      );
+    }
 
     const review =
-      await ReviewRepository.findById(id);
+      await reviewRepository.findById(
+        reviewId
+      );
 
     if (!review) {
       throw new ApiError(
@@ -83,87 +148,50 @@ export class ReviewService {
     return review;
   }
 
-
-  static async getFreelancerReviews(
-    freelancerId: string
+  async getUserReviews(
+    userId: string
   ) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid user ID"
+      );
+    }
 
-    return ReviewRepository.findByFreelancer(
-      freelancerId
+    return reviewRepository.findByReviewee(
+      userId
     );
   }
 
-
-  static async updateReview(
-    id: string,
-    clientId: string,
-    data: any
+  async getJobReviews(
+    jobId: string
   ) {
-
-    const review =
-      await ReviewRepository.findById(id);
-
-
-    if (!review) {
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
       throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Review not found"
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid job ID"
       );
     }
 
-
-    if (
-      review.client._id.toString()
-      !== clientId
-    ) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        "Not authorized"
-      );
-    }
-
-
-    return ReviewRepository.update(
-      id,
-      data
+    return reviewRepository.findByJob(
+      jobId
     );
   }
 
-
-  static async deleteReview(
-    id: string,
-    clientId: string
+  async getContractReviews(
+    contractId: string
   ) {
-
-    const review =
-      await ReviewRepository.findById(id);
-
-
-    if (!review) {
+    if (!mongoose.Types.ObjectId.isValid(contractId)) {
       throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Review not found"
+        HTTP_STATUS.BAD_REQUEST,
+        "Invalid contract ID"
       );
     }
 
-
-    if (
-      review.client._id.toString()
-      !== clientId
-    ) {
-      throw new ApiError(
-        HTTP_STATUS.FORBIDDEN,
-        "Not authorized"
-      );
-    }
-
-
-    await ReviewRepository.delete(id);
-
-
-    return {
-      message:
-        "Review deleted successfully",
-    };
+    return reviewRepository.findByContract(
+      contractId
+    );
   }
 }
+
+export default new ReviewService();

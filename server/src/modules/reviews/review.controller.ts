@@ -1,106 +1,92 @@
-import { Response, Request } from "express";
-import { AuthRequest } from "../../middleware/auth.middleware";
-import { ReviewService } from "./review.service";
+import { Response } from "express";
 
+import { AuthRequest } from "../../middleware/auth.middleware";
+import { asyncHandler } from "../../shared/asyncHandler";
+import { ApiResponse } from "../../shared/ApiResponse";
+import { HTTP_STATUS } from "../../shared/httpStatus";
+
+import reviewService from "./review.service";
 
 export class ReviewController {
 
-  static async createReview(
-    req: AuthRequest,
-    res: Response
-  ) {
-
-    const review =
-      await ReviewService.createReview(
+  static createReview = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const review = await reviewService.createReview(
         req.user!.id,
         req.body
       );
 
+      return res.status(HTTP_STATUS.CREATED).json(
+        new ApiResponse(
+          "Review created successfully",
+          review
+        )
+      );
+    }
+  );
 
-    return res.status(201).json({
-      success: true,
-      message: "Review created successfully",
-      data: review,
-    });
-  }
 
-
-  static async getReview(
-    req: Request,
-    res: Response
-  ) {
-
-    const review =
-      await ReviewService.getReview(
+  static getReview = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const review = await reviewService.getReview(
         req.params.id as string
       );
 
+      return res.status(HTTP_STATUS.OK).json(
+        new ApiResponse(
+          "Review fetched successfully",
+          review
+        )
+      );
+    }
+  );
 
-    return res.status(200).json({
-      success: true,
-      data: review,
-    });
-  }
 
-
-
-  static async getFreelancerReviews(
-    req: Request,
-    res: Response
-  ) {
-
-    const reviews =
-      await ReviewService.getFreelancerReviews(
-        req.params.freelancerId as string
+  static getUserReviews = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const reviews = await reviewService.getUserReviews(
+        req.params.userId as string
       );
 
+      return res.status(HTTP_STATUS.OK).json(
+        new ApiResponse(
+          "User reviews fetched successfully",
+          reviews
+        )
+      );
+    }
+  );
 
-    return res.status(200).json({
-      success: true,
-      data: reviews,
-    });
-  }
 
-
-
-  static async updateReview(
-    req: AuthRequest,
-    res: Response
-  ) {
-
-    const review =
-      await ReviewService.updateReview(
-        req.params.id  as string,
-        req.user!.id,
-        req.body
+  static getJobReviews = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const reviews = await reviewService.getJobReviews(
+        req.params.jobId as string
       );
 
+      return res.status(HTTP_STATUS.OK).json(
+        new ApiResponse(
+          "Job reviews fetched successfully",
+          reviews
+        )
+      );
+    }
+  );
 
-    return res.status(200).json({
-      success: true,
-      message: "Review updated successfully",
-      data: review,
-    });
-  }
 
-
-
-  static async deleteReview(
-    req: AuthRequest,
-    res: Response
-  ) {
-
-    const result =
-      await ReviewService.deleteReview(
-        req.params.id as string,
-        req.user!.id
+  static getContractReviews = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const reviews = await reviewService.getContractReviews(
+        req.params.contractId as string
       );
 
-
-    return res.status(200).json({
-      success: true,
-      message: result.message,
-    });
-  }
+      return res.status(HTTP_STATUS.OK).json(
+        new ApiResponse(
+          "Contract reviews fetched successfully",
+          reviews
+        )
+      );
+    }
+  );
 
 }

@@ -1,6 +1,16 @@
 import { Proposal } from "./proposal.model";
 import { IProposal } from "./proposal.types";
 
+const jobPopulate = {
+  path: "job",
+  select:
+    "title description category skills budget budgetType experienceLevel duration location isRemote attachments client status proposalsCount createdAt updatedAt",
+  populate: {
+    path: "client",
+    select: "fullName username avatar",
+  },
+};
+
 export class ProposalRepository {
   static async create(data: Partial<IProposal>) {
     return Proposal.create(data);
@@ -8,7 +18,13 @@ export class ProposalRepository {
 
   static async findById(id: string) {
     return Proposal.findById(id)
-      .populate("job")
+      .populate({
+        path: "job",
+        populate: {
+          path: "client",
+          select: "fullName username avatar",
+        },
+      })
       .populate(
         "freelancer",
         "fullName username avatar"
@@ -29,7 +45,7 @@ export class ProposalRepository {
   ) {
     return Proposal.find({
       freelancer: freelancerId,
-    }).populate("job");
+    }).populate(jobPopulate);
   }
 
   static async findExisting(
@@ -62,20 +78,21 @@ export class ProposalRepository {
 
   static async findAll() {
     return Proposal.find()
-      .populate("job")
+      .populate(jobPopulate)
       .populate(
         "freelancer",
         "fullName username avatar"
       );
   }
+
   static async updateStatus(
-  id: string,
-  status: string
-) {
-  return Proposal.findByIdAndUpdate(
-    id,
-    { status },
-    { new: true }
-  );
-}
+    id: string,
+    status: string
+  ) {
+    return Proposal.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+  }
 }

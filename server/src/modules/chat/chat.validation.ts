@@ -2,8 +2,8 @@ import { body } from "express-validator";
 
 export const sendMessageValidation = [
   body("receiver")
-    .notEmpty()
-    .withMessage("Receiver is required"),
+    .isMongoId()
+    .withMessage("Valid receiver ID is required"),
 
   body("message")
     .trim()
@@ -11,4 +11,14 @@ export const sendMessageValidation = [
     .withMessage("Message cannot be empty")
     .isLength({ max: 2000 })
     .withMessage("Message is too long"),
+
+  body("attachments")
+    .optional()
+    .isArray({ max: 10 })
+    .withMessage("Attachments must be an array with at most 10 items"),
+
+  body("attachments.*")
+    .optional()
+    .isString()
+    .withMessage("Each attachment must be a string"),
 ];

@@ -19,6 +19,7 @@ const chatSchema = new Schema<IChat>(
       type: String,
       required: true,
       trim: true,
+      maxlength: 2000,
     },
 
     attachments: [
@@ -36,6 +37,18 @@ const chatSchema = new Schema<IChat>(
     timestamps: true,
   }
 );
+
+chatSchema.index({
+  sender: 1,
+  receiver: 1,
+  createdAt: 1,
+});
+
+chatSchema.index({
+  receiver: 1,
+  sender: 1,
+  isRead: 1,
+});
 
 export const Chat = model<IChat>(
   "Chat",

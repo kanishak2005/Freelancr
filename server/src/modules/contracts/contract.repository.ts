@@ -1,6 +1,38 @@
 import { Contract } from "./contract.model";
 import { IContract } from "./contract.types";
 
+const userPopulate = {
+  path: "client",
+  select: "fullName username avatar",
+};
+
+const freelancerPopulate = {
+  path: "freelancer",
+  select: "fullName username avatar",
+};
+
+const jobPopulate = {
+  path: "job",
+  select:
+    "title description category skills budget budgetType experienceLevel duration location isRemote attachments client status proposalsCount createdAt updatedAt",
+  populate: {
+    path: "client",
+    select: "fullName username avatar",
+  },
+};
+
+const proposalPopulate = {
+  path: "proposal",
+  select:
+    "job freelancer coverLetter bidAmount deliveryTime attachments status createdAt updatedAt",
+  populate: [
+    {
+      path: "freelancer",
+      select: "fullName username avatar",
+    },
+  ],
+};
+
 export class ContractRepository {
   static async create(data: Partial<IContract>) {
     return Contract.create(data);
@@ -8,39 +40,36 @@ export class ContractRepository {
 
   static async findById(id: string) {
     return Contract.findById(id)
-      .populate("client", "fullName username avatar")
-      .populate("freelancer", "fullName username avatar")
-      .populate("job")
-      .populate("proposal");
+      .populate(userPopulate)
+      .populate(freelancerPopulate)
+      .populate(jobPopulate)
+      .populate(proposalPopulate);
   }
-  static async findByProposal(
-  proposalId: string
-) {
-  return Contract.findOne({
-    proposal: proposalId,
-  })
-    .populate("client", "fullName username avatar")
-    .populate("freelancer", "fullName username avatar")
-    .populate("job")
-    .populate("proposal");
-}
+
+  static async findByProposal(proposalId: string) {
+    return Contract.findOne({
+      proposal: proposalId,
+    })
+      .populate(userPopulate)
+      .populate(freelancerPopulate)
+      .populate(jobPopulate)
+      .populate(proposalPopulate);
+  }
 
   static async findByClient(clientId: string) {
     return Contract.find({
       client: clientId,
     })
-      .populate("freelancer", "fullName username avatar")
-      .populate("job");
+      .populate(freelancerPopulate)
+      .populate(jobPopulate);
   }
 
-  static async findByFreelancer(
-    freelancerId: string
-  ) {
+  static async findByFreelancer(freelancerId: string) {
     return Contract.find({
       freelancer: freelancerId,
     })
-      .populate("client", "fullName username avatar")
-      .populate("job");
+      .populate(userPopulate)
+      .populate(jobPopulate);
   }
 
   static async findAllByUser(userId: string) {
@@ -50,9 +79,9 @@ export class ContractRepository {
         { freelancer: userId },
       ],
     })
-      .populate("client", "fullName username avatar")
-      .populate("freelancer", "fullName username avatar")
-      .populate("job");
+      .populate(userPopulate)
+      .populate(freelancerPopulate)
+      .populate(jobPopulate);
   }
 
   static async update(

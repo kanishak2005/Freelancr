@@ -3,6 +3,7 @@ import { Router } from "express";
 import { ContractController } from "./contract.controller";
 
 import { authenticate } from "../../middleware/auth.middleware";
+import { authorize } from "../../middleware/authorize.middleware";
 
 import { validate } from "../../middleware/validate.middleware";
 
@@ -15,6 +16,7 @@ const router = Router();
 router.post(
   "/",
   authenticate,
+  authorize("client"),
   createContractValidation,
   validate,
   ContractController.create
@@ -35,12 +37,14 @@ router.get(
 router.patch(
   "/:id/complete",
   authenticate,
+  authorize("client"),
   ContractController.complete
 );
 
 router.patch(
   "/:id/cancel",
   authenticate,
+  authorize("client", "freelancer"),
   ContractController.cancel
 );
 

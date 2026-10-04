@@ -3,28 +3,52 @@ import { ApiError } from "../shared";
 
 export const errorMiddleware = (
   err: any,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   console.error("ERROR:", err);
 
-  const statusCode =
-    err instanceof ApiError
+  const isApiError = err instanceof ApiError;
+
+  const rawStatusCode =
+    isApiError
       ? err.statusCode
-      : err.statusCode || 500;
+      : err.statusCode;
+
+  const statusCode =
+    typeof rawStatusCode === "number" &&
+    rawStatusCode >= 400 &&
+    rawStatusCode < 600
+      ? rawStatusCode
+      : 500;
 
   const message =
-    err instanceof ApiError
+    isApiError
       ? err.message
-      : err.message || "Internal Server Error";
+      : statusCode === 500
+        ? "Internal Server Error"
+        : err.message || "Request failed";
 
-  return res.status(statusCode).json({
+  const response: {
+    success: false;
+    message: string;
+    error?: unknown;
+  } = {
     success: false,
     message,
-    error:
-      process.env.NODE_ENV === "development"
-        ? err.error || err
-        : undefined,
-  });
+  };
+
+  if (process.env.NODE_ENV === "development") {
+    response.error =
+      err instanceof Error
+        ? {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+          }
+        : err;
+  }
+
+  return res.status(statusCode).json(response);
 };

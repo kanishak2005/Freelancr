@@ -7,20 +7,11 @@ import { authenticate } from "../../middleware/auth.middleware";
 import { validate } from "../../middleware/validate.middleware";
 
 import {
-  createNotificationValidation,
   notificationIdValidation,
   notificationQueryValidation,
 } from "./notification.validation";
 
 const router = Router();
-
-router.post(
-  "/",
-  authenticate,
-  createNotificationValidation,
-  validate,
-  NotificationController.createNotification
-);
 
 router.get(
   "/",

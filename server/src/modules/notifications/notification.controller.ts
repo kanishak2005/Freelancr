@@ -1,32 +1,13 @@
-import { Response, Request } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { NotificationService } from "./notification.service";
 
 export class NotificationController {
 
-  static async createNotification(
-    req: AuthRequest,
-    res: Response
-  ) {
-
-    const notification =
-      await NotificationService.createNotification({
-        ...req.body,
-        sender: req.user!.id,
-      });
-
-    return res.status(201).json({
-      success: true,
-      message: "Notification created successfully",
-      data: notification,
-    });
-  }
-
   static async getMyNotifications(
     req: AuthRequest,
     res: Response
   ) {
-
     const result =
       await NotificationService.getMyNotifications(
         req.user!.id,
@@ -50,12 +31,11 @@ export class NotificationController {
     req: AuthRequest,
     res: Response
   ) {
-
     const notification =
-  await NotificationService.getNotification(
-    String(req.params.id as string),
-    req.user!.id
-  );
+      await NotificationService.getNotification(
+        String(req.params.id as string),
+        req.user!.id
+      );
 
     return res.status(200).json({
       success: true,
@@ -67,12 +47,11 @@ export class NotificationController {
     req: AuthRequest,
     res: Response
   ) {
-
     const notification =
-  await NotificationService.markAsRead(
-    String(req.params.id as string),
-    req.user!.id
-  );
+      await NotificationService.markAsRead(
+        String(req.params.id as string),
+        req.user!.id
+      );
 
     return res.status(200).json({
       success: true,
@@ -85,7 +64,6 @@ export class NotificationController {
     req: AuthRequest,
     res: Response
   ) {
-
     const result =
       await NotificationService.markAllAsRead(
         req.user!.id
@@ -102,7 +80,6 @@ export class NotificationController {
     req: AuthRequest,
     res: Response
   ) {
-
     const count =
       await NotificationService.getUnreadCount(
         req.user!.id
@@ -120,12 +97,11 @@ export class NotificationController {
     req: AuthRequest,
     res: Response
   ) {
-
     const result =
-  await NotificationService.deleteNotification(
-    String(req.params.id as string),
-    req.user!.id
-  );
+      await NotificationService.deleteNotification(
+        String(req.params.id as string),
+        req.user!.id
+      );
 
     return res.status(200).json({
       success: true,
@@ -137,7 +113,6 @@ export class NotificationController {
     req: AuthRequest,
     res: Response
   ) {
-
     const result =
       await NotificationService.deleteAll(
         req.user!.id

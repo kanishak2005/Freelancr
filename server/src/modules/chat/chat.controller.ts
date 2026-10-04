@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { ChatService } from "./chat.service";
 
@@ -38,12 +38,13 @@ export class ChatController {
   }
 
   static async getMessage(
-    req: Request,
+    req: AuthRequest,
     res: Response
   ) {
     const chat =
       await ChatService.getMessage(
-        req.params.id as string
+        req.params.id as string,
+        req.user!.id
       );
 
     return res.status(200).json({

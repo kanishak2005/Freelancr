@@ -3,7 +3,7 @@ import { UserController } from "./user.controller";
 import { authenticate } from "../../middleware/auth.middleware";
 import { validate } from "../../middleware/validate.middleware";
 import { updateProfileValidation } from "./user.validation";
-import { upload } from "../uploads/multer";
+import { upload, resumeUpload } from "../uploads/multer";
 
 const router = Router();
 
@@ -39,7 +39,7 @@ router.delete(
 router.post(
   "/resume",
   authenticate,
-  upload.single("resume"),
+  resumeUpload.single("resume"),
   UserController.uploadResume
 );
 
@@ -57,3 +57,4 @@ router.delete(
 );
 
 export default router;
+

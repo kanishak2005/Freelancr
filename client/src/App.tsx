@@ -1,14 +1,19 @@
-import RazorpayCheckout from "./components/payment/RazorpayCheckout";
+import { RouterProvider } from "react-router-dom";
+
+import SocketProvider from "./components/common/SocketProvider";
+import AuthInitializer from "./components/common/AuthInitializer";
+
+import  {router}  from "./routes";
 
 function App() {
   return (
-    <div>
-      <h1>Freelancr Payment Test</h1>
+    <>
+      <AuthInitializer />
 
-      <RazorpayCheckout
-        contractId="6aa865d252f2325dde5b3f60"
-      />
-    </div>
+      <SocketProvider />
+
+      <RouterProvider router={router} />
+    </>
   );
 }
 

@@ -17,13 +17,15 @@ export const initSocket = (
     },
   });
 
-  // Socket authentication
   io.use(async (socket, next) => {
     try {
       const token =
         socket.handshake.auth?.token;
 
-      if (!token) {
+      if (
+        typeof token !== "string" ||
+        !token.trim()
+      ) {
         return next(
           new Error("Access token missing")
         );
@@ -32,8 +34,15 @@ export const initSocket = (
       const decoded =
         verifyAccessToken(token) as {
           id: string;
-          role: string;
         };
+
+      if (
+        !decoded?.id
+      ) {
+        return next(
+          new Error("Invalid access token")
+        );
+      }
 
       const user =
         await UserRepository.findById(
@@ -46,9 +55,15 @@ export const initSocket = (
         );
       }
 
+      if (!user.isActive) {
+        return next(
+          new Error("Your account has been deactivated")
+        );
+      }
+
       socket.data.user = {
-        id: decoded.id,
-        role: decoded.role,
+        id: user._id.toString(),
+        role: user.role,
       };
 
       next();
@@ -68,39 +83,25 @@ export const initSocket = (
   setSocket(io);
 
   io.on("connection", (socket) => {
-
     const userId =
       socket.data.user.id;
 
-    console.log(
-      `🔐 Authenticated socket: ${socket.id}`
-    );
-
-    console.log(
-      `👤 User connected: ${userId}`
-    );
-
-    // Automatically join the user's private room
+    // Every authenticated socket automatically
+    // joins only its own private user room.
     socket.join(`user:${userId}`);
+
+    console.log(
+      `Socket ${socket.id} connected for user:${userId}`
+    );
 
     registerSocketHandlers(socket);
 
     socket.on("disconnect", (reason) => {
-
       console.log(
-        `🔌 Socket disconnected: ${socket.id}`
+        `Socket ${socket.id} disconnected: ${reason}`
       );
-
-      console.log(
-        `Reason: ${reason}`
-      );
-
     });
   });
-
-  console.log(
-    "⚡ Socket.IO initialized"
-  );
 
   return io;
 };

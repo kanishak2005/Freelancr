@@ -1,49 +1,99 @@
-import { Review } from "./review.model";
-import { IReview } from "./review.types";
+import { Types } from "mongoose";
 
-export class ReviewRepository {
-  static async create(data: Partial<IReview>) {
+import { Review } from "./review.model";
+
+class ReviewRepository {
+  async create(data: {
+    reviewer: Types.ObjectId;
+    reviewee: Types.ObjectId;
+    contract: Types.ObjectId;
+    job: Types.ObjectId;
+    rating: number;
+    comment: string;
+    reviewerRole:
+      | "client"
+      | "freelancer";
+  }) {
     return Review.create(data);
   }
 
-  static async findById(id: string) {
+  async findById(id: string) {
     return Review.findById(id)
-      .populate("client", "fullName username avatar")
-      .populate("freelancer", "fullName username avatar")
-      .populate("contract");
+      .populate(
+        "reviewer",
+        "fullName username avatar"
+      )
+      .populate(
+        "reviewee",
+        "fullName username avatar"
+      )
+      .populate(
+        "job",
+        "title"
+      );
   }
 
-  static async findByContract(contractId: string) {
+  async findByReviewerAndContract(
+    reviewerId: string,
+    contractId: string
+  ) {
     return Review.findOne({
+      reviewer: reviewerId,
       contract: contractId,
     });
   }
 
-  static async findByFreelancer(
-    freelancerId: string
+  async findByReviewee(
+    revieweeId: string
   ) {
     return Review.find({
-      freelancer: freelancerId,
+      reviewee: revieweeId,
     })
-      .populate("client", "fullName username")
-      .sort({ createdAt: -1 });
+      .populate(
+        "reviewer",
+        "fullName username avatar"
+      )
+      .populate(
+        "job",
+        "title"
+      )
+      .sort({
+        createdAt: -1,
+      });
   }
 
-  static async update(
-    id: string,
-    data: Partial<IReview>
+  async findByJob(jobId: string) {
+    return Review.find({
+      job: jobId,
+    })
+      .populate(
+        "reviewer",
+        "fullName username avatar"
+      )
+      .populate(
+        "reviewee",
+        "fullName username avatar"
+      )
+      .sort({
+        createdAt: -1,
+      });
+  }
+
+  async findByContract(
+    contractId: string
   ) {
-    return Review.findByIdAndUpdate(
-      id,
-      data,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-  }
-
-  static async delete(id: string) {
-    return Review.findByIdAndDelete(id);
+    return Review.find({
+      contract: contractId,
+    })
+      .populate(
+        "reviewer",
+        "fullName username avatar"
+      )
+      .populate(
+        "reviewee",
+        "fullName username avatar"
+      );
   }
 }
+
+export default new ReviewRepository();

@@ -1,6 +1,10 @@
 import { User } from "../users/user.model";
 import { Job } from "../jobs/job.model";
 import { ApiError, HTTP_STATUS } from "../../shared";
+import { UploadService } from "../uploads/upload.service";
+
+const SAFE_USER_FIELDS =
+  "-password -refreshToken -passwordResetToken -passwordResetExpires";
 
 export class AdminService {
 
@@ -9,7 +13,6 @@ export class AdminService {
   // ==============================
 
   static async getDashboardStats() {
-
     const [
       totalUsers,
       totalClients,
@@ -24,7 +27,6 @@ export class AdminService {
       completedJobs,
       cancelledJobs,
     ] = await Promise.all([
-
       User.countDocuments(),
 
       User.countDocuments({
@@ -58,16 +60,16 @@ export class AdminService {
       }),
 
       Job.countDocuments({
-  status: "in_progress",
-} as any),
+        status: "in_progress",
+      } as any),
 
-Job.countDocuments({
-  status: "completed",
-} as any),
+      Job.countDocuments({
+        status: "completed",
+      } as any),
 
-Job.countDocuments({
-  status: "cancelled",
-} as any),
+      Job.countDocuments({
+        status: "cancelled",
+      } as any),
     ]);
 
     return {
@@ -91,7 +93,6 @@ Job.countDocuments({
     };
   }
 
-
   // ==============================
   // GET USERS
   // ==============================
@@ -102,7 +103,6 @@ Job.countDocuments({
     role?: string,
     isActive?: boolean
   ) {
-
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -116,11 +116,8 @@ Job.countDocuments({
     }
 
     const [users, total] = await Promise.all([
-
       User.find(filter)
-        .select(
-          "-password -refreshToken -passwordResetToken -passwordResetExpires"
-        )
+        .select(SAFE_USER_FIELDS)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -139,17 +136,13 @@ Job.countDocuments({
     };
   }
 
-
   // ==============================
   // GET SINGLE USER
   // ==============================
 
   static async getUser(id: string) {
-
     const user = await User.findById(id)
-      .select(
-        "-password -refreshToken -passwordResetToken -passwordResetExpires"
-      );
+      .select(SAFE_USER_FIELDS);
 
     if (!user) {
       throw new ApiError(
@@ -161,7 +154,6 @@ Job.countDocuments({
     return user;
   }
 
-
   // ==============================
   // UPDATE USER STATUS
   // ==============================
@@ -170,7 +162,6 @@ Job.countDocuments({
     id: string,
     isActive: boolean
   ) {
-
     const user = await User.findById(id);
 
     if (!user) {
@@ -184,16 +175,17 @@ Job.countDocuments({
 
     await user.save();
 
-    return user;
-  }
+    const safeUser = await User.findById(id)
+      .select(SAFE_USER_FIELDS);
 
+    return safeUser;
+  }
 
   // ==============================
   // VERIFY USER
   // ==============================
 
   static async verifyUser(id: string) {
-
     const user = await User.findById(id);
 
     if (!user) {
@@ -207,16 +199,17 @@ Job.countDocuments({
 
     await user.save();
 
-    return user;
-  }
+    const safeUser = await User.findById(id)
+      .select(SAFE_USER_FIELDS);
 
+    return safeUser;
+  }
 
   // ==============================
   // DELETE USER
   // ==============================
 
   static async deleteUser(id: string) {
-
     const user = await User.findById(id);
 
     if (!user) {
@@ -233,13 +226,48 @@ Job.countDocuments({
       );
     }
 
+    const resumePublicId =
+      user.resumePublicId || "";
+
+    const portfolioPublicIds =
+      (user.portfolio || [])
+        .map((item) => item.publicId)
+        .filter(
+          (publicId): publicId is string =>
+            typeof publicId === "string" &&
+            publicId.trim().length > 0
+        );
+
     await User.findByIdAndDelete(id);
+
+    if (resumePublicId) {
+      try {
+        await UploadService.deleteFile(
+          resumePublicId,
+          "raw"
+        );
+      } catch {
+        // User deletion already succeeded.
+        // Do not fail deletion because Cloudinary cleanup failed.
+      }
+    }
+
+    for (const publicId of portfolioPublicIds) {
+      try {
+        await UploadService.deleteFile(
+          publicId,
+          "image"
+        );
+      } catch {
+        // User deletion already succeeded.
+        // Do not fail deletion because Cloudinary cleanup failed.
+      }
+    }
 
     return {
       message: "User deleted successfully",
     };
   }
-
 
   // ==============================
   // GET JOBS
@@ -250,7 +278,6 @@ Job.countDocuments({
     limit = 20,
     status?: string
   ) {
-
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -260,7 +287,6 @@ Job.countDocuments({
     }
 
     const [jobs, total] = await Promise.all([
-
       Job.find(filter)
         .populate(
           "client",
@@ -284,7 +310,6 @@ Job.countDocuments({
     };
   }
 
-
   // ==============================
   // UPDATE JOB STATUS
   // ==============================
@@ -293,7 +318,6 @@ Job.countDocuments({
     id: string,
     status: string
   ) {
-
     const allowedStatuses = [
       "open",
       "in_progress",
@@ -324,13 +348,11 @@ Job.countDocuments({
     return job;
   }
 
-
   // ==============================
   // DELETE JOB
   // ==============================
 
   static async deleteJob(id: string) {
-
     const job = await Job.findById(id);
 
     if (!job) {
@@ -347,3 +369,5 @@ Job.countDocuments({
     };
   }
 }
+
+

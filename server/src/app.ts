@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import path from "path";
 
 import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/users/user.routes";
@@ -19,12 +18,13 @@ import adminRoutes from "./modules/admin/admin.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { PaymentController } from "./modules/payments/payment.controller";
+import { env } from "./config/env";
 
 const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: env.CLIENT_URL,
     credentials: true,
   })
 );
@@ -45,10 +45,6 @@ app.use(
   })
 );
 app.use(cookieParser());
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "../uploads"))
-);
 
 // Routes MUST come after express.json()
 app.use("/api/v1/auth", authRoutes);

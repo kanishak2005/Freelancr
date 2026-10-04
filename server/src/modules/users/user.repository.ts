@@ -15,7 +15,9 @@ export class UserRepository {
   }
 
   static async findByUsername(username: string) {
-    return User.findOne({ username });
+    return User.findOne({ username }).select(
+      "fullName username role avatar bio location skills resume portfolio isVerified createdAt updatedAt"
+    );
   }
 
   static async findById(id: string) {
@@ -82,16 +84,16 @@ export class UserRepository {
     );
   }
 
- static async findByResetToken(token: string) {
-  return User.findOne({
-    passwordResetToken: token,
-    passwordResetExpires: { $gt: new Date() },
-  }).select(
-    "+password +passwordResetToken +passwordResetExpires"
-  );
-}
+  static async findByResetToken(token: string) {
+    return User.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: new Date() },
+    }).select(
+      "+password +passwordResetToken +passwordResetExpires"
+    );
+  }
 
-static async clearResetToken(id: string) {
+  static async clearResetToken(id: string) {
     return User.findByIdAndUpdate(
       id,
       {
@@ -100,80 +102,87 @@ static async clearResetToken(id: string) {
       },
       { new: true }
     );
-}
-static async updateProfile(
-  id: string,
-  data: any
-) {
-  return User.findByIdAndUpdate(
-    id,
-    data,
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
-}
+  }
 
-static async findAll() {
-  return User.find().sort({
-    createdAt: -1,
-  });
-}
+  static async updateProfile(
+    id: string,
+    data: any
+  ) {
+    return User.findByIdAndUpdate(
+      id,
+      data,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+  }
 
-static async deleteUser(id: string) {
-  return User.findByIdAndDelete(id);
-}
-static async updateResume(
-  id: string,
-  resume: string,
-  publicId: string
-) {
-  return User.findByIdAndUpdate(
-    id,
-    {
-      resume,
-      resumePublicId: publicId,
-    },
-    {
-      new: true,
-    }
-  );
-}
+  static async findAll() {
+    return User.find()
+      .select(
+        "fullName username role avatar bio location skills resume portfolio isVerified createdAt updatedAt"
+      )
+      .sort({
+        createdAt: -1,
+      });
+  }
 
-static async addPortfolio(
-  id: string,
-  item: any
-) {
-  return User.findByIdAndUpdate(
-    id,
-    {
-      $push: {
-        portfolio: item,
+  static async deleteUser(id: string) {
+    return User.findByIdAndDelete(id);
+  }
+
+  static async updateResume(
+    id: string,
+    resume: string,
+    publicId: string
+  ) {
+    return User.findByIdAndUpdate(
+      id,
+      {
+        resume,
+        resumePublicId: publicId,
       },
-    },
-    {
-      new: true,
-    }
-  );
-}
+      {
+        new: true,
+      }
+    );
+  }
 
-static async removePortfolio(
-  id: string,
-  publicId: string
-) {
-  return User.findByIdAndUpdate(
-    id,
-    {
-      $pull: {
-        portfolio: {
-          publicId,
+  static async addPortfolio(
+    id: string,
+    item: any
+  ) {
+    return User.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          portfolio: item,
         },
       },
-    },
-    {
-      new: true,
-    }
-  );
+      {
+        new: true,
+      }
+    );
+  }
+
+  static async removePortfolio(
+    id: string,
+    publicId: string
+  ) {
+    return User.findByIdAndUpdate(
+      id,
+      {
+        $pull: {
+          portfolio: {
+            publicId,
+          },
+        },
+      },
+      {
+        new: true,
+      }
+    );
+  }
 }
-}
+
