@@ -4,7 +4,6 @@ import { JobService } from "./job.service";
 
 export class JobController {
   static async createJob(req: AuthRequest, res: Response) {
-  console.log("BODY:", req.body);
 
   const job = await JobService.createJob(
     req.user!.id,
@@ -91,3 +90,4 @@ export class JobController {
     });
   }
 }
+

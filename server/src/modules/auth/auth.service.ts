@@ -255,13 +255,7 @@ static async resetPassword(
 ) {
   const hashedToken = hashResetToken(token);
 
-  console.log("================================");
-console.log("Received Token:", token);
-console.log("Hashed Token:", hashedToken);
-
   const user = await UserRepository.findByResetToken(hashedToken);
-
-  console.log("User:", user);
 
   if (!user) {
     throw new ApiError(

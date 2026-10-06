@@ -4,6 +4,7 @@ export type PaymentStatus =
   | "created"
   | "paid"
   | "failed"
+  | "partially_refunded"
   | "refunded";
 
 export interface IPayment extends Document {
@@ -12,6 +13,7 @@ export interface IPayment extends Document {
   freelancer: Types.ObjectId;
 
   amount: number;
+  refundedAmount: number;
   currency: "INR";
 
   razorpayOrderId: string;

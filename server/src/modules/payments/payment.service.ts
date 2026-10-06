@@ -38,8 +38,6 @@ export class PaymentService {
 
   const event = payload.event;
 
-  console.log("Razorpay webhook received:", event);
-
   if (event === "payment.captured") {
     const paymentEntity = payload.payload?.payment?.entity;
 
@@ -69,10 +67,6 @@ export class PaymentService {
       status: "paid",
       paidAt: new Date(),
     });
-
-    console.log(
-      `Payment ${orderId} marked as paid through webhook`
-    );
   }
 
   if (event === "payment.failed") {
@@ -101,10 +95,6 @@ export class PaymentService {
     await PaymentRepository.updateByOrderId(orderId, {
       status: "failed",
     });
-
-    console.log(
-      `Payment ${orderId} marked as failed through webhook`
-    );
   }
 }
 
@@ -234,7 +224,10 @@ export class PaymentService {
       );
     }
 
-    if (payment.status === "paid") {
+      if (
+      payment.status === "paid" ||
+      payment.status === "partially_refunded"
+    ) {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
         "Payment has already been verified"
@@ -489,11 +482,11 @@ export class PaymentService {
   // REFUND PAYMENT
   // ==========================================
 
-  static async refund(
+     static async refund(
     id: string,
-    userId: string
+    userId: string,
+    requestedAmount?: number
   ) {
-
     const payment =
       await PaymentRepository.findById(id);
 
@@ -515,10 +508,13 @@ export class PaymentService {
       );
     }
 
-    if (payment.status !== "paid") {
+    if (
+      payment.status !== "paid" &&
+      payment.status !== "partially_refunded"
+    ) {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
-        "Payment is not completed"
+        "Payment is not refundable"
       );
     }
 
@@ -529,43 +525,152 @@ export class PaymentService {
       );
     }
 
-    // Actual Razorpay refund
-    const razorpayPayment =
-  await razorpay.payments.fetch(
-    payment.razorpayPaymentId
-  );
+    let razorpayPayment: any;
 
-console.log(
-  "RAZORPAY PAYMENT:",
-  JSON.stringify(razorpayPayment, null, 2)
-);
-    const refund = await razorpay.payments.refund(
-  payment.razorpayPaymentId,
-  {
-    amount: Math.round(payment.amount * 100),
-  }
-);
-    const updatedPayment =
-      await PaymentRepository.updateStatus(
-        id,
-        "refunded"
+    try {
+      razorpayPayment =
+        await razorpay.payments.fetch(
+          payment.razorpayPaymentId
+        );
+    } catch (error: any) {
+      console.error("Failed to fetch Razorpay payment:", {
+        statusCode: error?.statusCode,
+        code: error?.error?.code,
+        description: error?.error?.description,
+        reason: error?.error?.reason,
+      });
+
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Unable to verify payment with Razorpay"
       );
-      if (updatedPayment) {
-  await NotificationService.createNotification({
-    recipient: payment.freelancer,
-    sender: payment.client,
-    title: "Payment Refunded",
-    message: `The payment for the contract "${(payment.contract as any).title}" has been refunded.`,
-    type: "payment",
-  });
-}
+    }
+
+    if (
+      razorpayPayment.order_id !==
+      payment.razorpayOrderId
+    ) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Payment does not belong to this order"
+      );
+    }
+
+    if (
+      razorpayPayment.status !== "captured"
+    ) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Payment has not been captured by Razorpay"
+      );
+    }
+
+    const originalAmount =
+      Math.round(payment.amount * 100);
+
+    const amountAlreadyRefunded =
+      Number(
+        razorpayPayment.amount_refunded ?? 0
+      );
+
+    const remainingAmount =
+      originalAmount - amountAlreadyRefunded;
+
+    if (remainingAmount <= 0) {
+      await PaymentRepository.update(
+        id,
+        {
+          status: "refunded",
+          refundedAmount: payment.amount,
+        }
+      );
+
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Payment has already been fully refunded"
+      );
+    }
+
+    const refundAmount =
+      requestedAmount === undefined
+        ? remainingAmount
+        : Math.round(requestedAmount * 100);
+
+    if (refundAmount <= 0) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Refund amount must be greater than 0"
+      );
+    }
+
+    if (refundAmount > remainingAmount) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        `Refund amount cannot exceed the remaining refundable amount of ₹${remainingAmount / 100}`
+      );
+    }
+
+    try {
+      await razorpay.payments.refund(
+        payment.razorpayPaymentId,
+        {
+          amount: refundAmount,
+        }
+      );
+    } catch (error: any) {
+      console.error("Razorpay refund failed:", {
+        statusCode: error?.statusCode,
+        code: error?.error?.code,
+        description: error?.error?.description,
+        reason: error?.error?.reason,
+      });
+
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Refund could not be processed by Razorpay"
+      );
+    }
+
+    const totalRefunded =
+      amountAlreadyRefunded + refundAmount;
+
+    const refundedAmountInRupees =
+      totalRefunded / 100;
+
+    const fullyRefunded =
+      totalRefunded >= originalAmount;
+
+    const updatedPayment =
+      await PaymentRepository.update(
+        id,
+        {
+          refundedAmount: refundedAmountInRupees,
+          status: fullyRefunded
+            ? "refunded"
+            : "partially_refunded",
+        }
+      );
+
+    if (updatedPayment) {
+      await NotificationService.createNotification({
+        recipient: payment.freelancer,
+        sender: payment.client,
+        title: fullyRefunded
+          ? "Payment Refunded"
+          : "Partial Payment Refund",
+        message: fullyRefunded
+          ? `The payment for the contract "${(payment.contract as any).title}" has been fully refunded.`
+          : `A partial refund of ₹${refundAmount / 100} was processed for the contract "${(payment.contract as any).title}".`,
+        type: "payment",
+      });
+    }
 
     return {
-      message: "Payment refunded successfully",
+      message: fullyRefunded
+        ? "Payment refunded successfully"
+        : "Partial refund processed successfully",
       payment: updatedPayment,
     };
   }
 }
-
-
 

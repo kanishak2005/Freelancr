@@ -49,10 +49,22 @@ const paymentSchema = new Schema<IPayment>(
     },
 
     status: {
-      type: String,
-      enum: ["created", "paid", "failed", "refunded"],
-      default: "created",
-    },
+  type: String,
+  enum: [
+    "created",
+    "paid",
+    "failed",
+    "partially_refunded",
+    "refunded",
+  ],
+  default: "created",
+},
+
+refundedAmount: {
+  type: Number,
+  default: 0,
+  min: 0,
+},
 
     paidAt: {
       type: Date,

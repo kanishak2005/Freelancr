@@ -19,3 +19,12 @@ export const verifyPaymentValidation = [
     .notEmpty()
     .withMessage("Signature is required"),
 ];
+
+export const refundValidation = [
+  body("amount")
+    .optional()
+    .isNumeric()
+    .withMessage("Refund amount must be a number")
+    .custom((value) => Number(value) > 0)
+    .withMessage("Refund amount must be greater than 0"),
+];

@@ -96,10 +96,11 @@ export class PaymentController {
   ) {
 
     const result =
-      await PaymentService.refund(
-        req.params.id as string,
-        req.user!.id
-      );
+  await PaymentService.refund(
+    req.params.id as string,
+    req.user!.id,
+    req.body.amount
+  );
 
     return res.status(200).json({
       success: true,

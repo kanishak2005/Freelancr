@@ -7,6 +7,7 @@ import { validate } from "../../middleware/validate.middleware";
 import {
   createOrderValidation,
   verifyPaymentValidation,
+  refundValidation,
 } from "./payment.validation";
 
 const router = Router();
@@ -42,6 +43,8 @@ router.get(
 router.patch(
   "/refund/:id",
   authenticate,
+  refundValidation,
+  validate,
   PaymentController.refund
 );
 
