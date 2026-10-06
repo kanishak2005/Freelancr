@@ -3,21 +3,24 @@ import { body } from "express-validator";
 export const createJobValidation = [
   body("title")
     .trim()
-    .isLength({ min: 5 })
-    .withMessage("Title must be at least 5 characters"),
+    .isLength({ min: 5, max: 150 })
+    .withMessage("Title must be between 5 and 150 characters"),
 
   body("description")
     .trim()
-    .isLength({ min: 20 })
-    .withMessage("Description must be at least 20 characters"),
+    .isLength({ min: 20, max: 5000 })
+    .withMessage(
+      "Description must be between 20 and 5000 characters"
+    ),
 
   body("category")
+    .trim()
     .notEmpty()
     .withMessage("Category is required"),
 
   body("budget")
-    .isNumeric()
-    .withMessage("Budget must be a number"),
+    .isFloat({ min: 1 })
+    .withMessage("Budget must be greater than 0"),
 
   body("budgetType")
     .isIn(["fixed", "hourly"])
@@ -29,8 +32,28 @@ export const createJobValidation = [
 ];
 
 export const updateJobValidation = [
-  body("title").optional(),
-  body("description").optional(),
-  body("category").optional(),
-  body("budget").optional().isNumeric(),
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 150 })
+    .withMessage("Title must be between 5 and 150 characters"),
+
+  body("description")
+    .optional()
+    .trim()
+    .isLength({ min: 20, max: 5000 })
+    .withMessage(
+      "Description must be between 20 and 5000 characters"
+    ),
+
+  body("category")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("Category cannot be empty"),
+
+  body("budget")
+    .optional()
+    .isFloat({ min: 1 })
+    .withMessage("Budget must be greater than 0"),
 ];

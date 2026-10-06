@@ -255,6 +255,11 @@ return updatedContract;
 
   const senderId = userId;
 
+  await JobRepository.updateStatus(
+    contract.job._id.toString(),
+    "cancelled"
+  );
+
   const updatedContract =
     await ContractRepository.update(
       id,

@@ -118,7 +118,12 @@ export class JobService {
   static async searchJobs(
     keyword: string
   ) {
-    return JobRepository.search(keyword);
+    const escapedKeyword = keyword.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+    return JobRepository.search(escapedKeyword);
   }
 
   static async filterJobs(filters: any) {
@@ -156,7 +161,7 @@ export class JobService {
       typeof filters.status === "string" &&
       [
         "open",
-        "in-progress",
+        "in_progress",
         "completed",
         "cancelled",
       ].includes(filters.status)

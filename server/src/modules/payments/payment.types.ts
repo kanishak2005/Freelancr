@@ -14,6 +14,9 @@ export interface IPayment extends Document {
 
   amount: number;
   refundedAmount: number;
+  pendingRefundAmount: number;
+  pendingRefundId?: string;
+
   currency: "INR";
 
   razorpayOrderId: string;
