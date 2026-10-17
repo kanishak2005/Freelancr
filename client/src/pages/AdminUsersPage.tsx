@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import {
   deleteAdminUser,
   getAdminUsers,
@@ -7,40 +6,32 @@ import {
   verifyAdminUser,
   type AdminUser,
 } from "../services/admin.api";
+import { Badge } from "../components/ui/Badge";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [role, setRole] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
-
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError("");
-
       const data = await getAdminUsers({
         page,
         limit: 10,
         role: role || undefined,
-        isActive:
-          activeFilter === ""
-            ? undefined
-            : activeFilter === "true",
+        isActive: activeFilter === "" ? undefined : activeFilter === "true",
       });
-
       setUsers(data.users);
       setTotalPages(data.pagination.totalPages);
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          "Failed to load users."
-      );
+      setError(err?.response?.data?.message || "Failed to load users.");
     } finally {
       setLoading(false);
     }
@@ -50,283 +41,207 @@ export default function AdminUsersPage() {
     loadUsers();
   }, [page, role, activeFilter]);
 
-  const handleStatus = async (
-    user: AdminUser
-  ) => {
+  const handleStatus = async (user: AdminUser) => {
     try {
-      await updateAdminUserStatus(
-        user._id,
-        !user.isActive
-      );
-
+      setActionLoadingId(user._id);
+      await updateAdminUserStatus(user._id, !user.isActive);
       await loadUsers();
     } catch (err: any) {
-      alert(
-        err?.response?.data?.message ||
-          "Failed to update user status."
-      );
+      alert(err?.response?.data?.message || "Failed to update user status.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
-  const handleVerify = async (
-    user: AdminUser
-  ) => {
+  const handleVerify = async (user: AdminUser) => {
     try {
-      await verifyAdminUser(
-        user._id,
-        !user.isVerified
-      );
-
+      setActionLoadingId(user._id);
+      await verifyAdminUser(user._id, !user.isVerified);
       await loadUsers();
     } catch (err: any) {
-      alert(
-        err?.response?.data?.message ||
-          "Failed to update verification."
-      );
+      alert(err?.response?.data?.message || "Failed to update verification.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
-  const handleDelete = async (
-    user: AdminUser
-  ) => {
+  const handleDelete = async (user: AdminUser) => {
     const confirmed = window.confirm(
       `Delete user "${user.fullName}"? This action cannot be undone.`
     );
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
+      setActionLoadingId(user._id);
       await deleteAdminUser(user._id);
-
       await loadUsers();
     } catch (err: any) {
-      alert(
-        err?.response?.data?.message ||
-          "Failed to delete user."
-      );
+      alert(err?.response?.data?.message || "Failed to delete user.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          User Management
-        </h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Marketplace User Accounts</h1>
+          <p className="text-sm text-slate-500">
+            Search, verify identity flags, inspect account statuses, and moderate platform members.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={role}
+            onChange={(e) => {
+              setRole(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="">All Account Roles</option>
+            <option value="client">Clients</option>
+            <option value="freelancer">Freelancers</option>
+            <option value="admin">Administrators</option>
+          </select>
 
-        <p className="mt-2 text-gray-600">
-          Manage Freelancr users and account status.
-        </p>
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-4 rounded-xl border bg-white p-4 shadow-sm">
-        <select
-          value={role}
-          onChange={(event) => {
-            setRole(event.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border px-4 py-2"
-        >
-          <option value="">All Roles</option>
-          <option value="client">Clients</option>
-          <option value="freelancer">
-            Freelancers
-          </option>
-          <option value="admin">Admins</option>
-        </select>
-
-        <select
-          value={activeFilter}
-          onChange={(event) => {
-            setActiveFilter(event.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border px-4 py-2"
-        >
-          <option value="">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
+          <select
+            value={activeFilter}
+            onChange={(e) => {
+              setActiveFilter(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="">All Statuses</option>
+            <option value="true">Active Accounts</option>
+            <option value="false">Deactivated Accounts</option>
+          </select>
+        </div>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
           {error}
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
+      {/* Users Table */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-600">
-            Loading users...
-          </div>
+          <div className="p-8 text-center text-sm text-slate-500">Loading user registry...</div>
         ) : users.length === 0 ? (
-          <div className="p-8 text-center text-gray-600">
-            No users found.
-          </div>
+          <div className="p-8 text-center text-sm text-slate-500">No users match the criteria.</div>
         ) : (
-          <table className="w-full min-w-[900px]">
-            <thead className="border-b bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold">
-                  User
-                </th>
-
-                <th className="px-4 py-3 text-left text-sm font-semibold">
-                  Email
-                </th>
-
-                <th className="px-4 py-3 text-left text-sm font-semibold">
-                  Role
-                </th>
-
-                <th className="px-4 py-3 text-left text-sm font-semibold">
-                  Status
-                </th>
-
-                <th className="px-4 py-3 text-left text-sm font-semibold">
-                  Verification
-                </th>
-
-                <th className="px-4 py-3 text-left text-sm font-semibold">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {users.map((user) => (
-                <tr
-                  key={user._id}
-                  className="border-b last:border-b-0"
-                >
-                  <td className="px-4 py-4">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {user.fullName}
-                      </p>
-
-                      <p className="text-sm text-gray-500">
-                        @{user.username}
-                      </p>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-4 text-sm text-gray-700">
-                    {user.email}
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium capitalize text-indigo-700">
-                      {user.role}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        user.isActive
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {user.isActive
-                        ? "Active"
-                        : "Inactive"}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        user.isVerified
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {user.isVerified
-                        ? "Verified"
-                        : "Not Verified"}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleStatus(user)
-                        }
-                        disabled={user.role === "admin"}
-                        className="rounded-lg bg-gray-800 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {user.isActive
-                          ? "Deactivate"
-                          : "Activate"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleVerify(user)
-                        }
-                        disabled={user.role === "admin"}
-                        className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {user.isVerified
-                          ? "Unverify"
-                          : "Verify"}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleDelete(user)
-                        }
-                        disabled={user.role === "admin"}
-                        className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-semibold text-slate-600 uppercase">
+                <tr>
+                  <th className="px-6 py-3.5">User Identity</th>
+                  <th className="px-6 py-3.5">Email</th>
+                  <th className="px-6 py-3.5">Role</th>
+                  <th className="px-6 py-3.5">Status</th>
+                  <th className="px-6 py-3.5">Verification</th>
+                  <th className="px-6 py-3.5 text-right">Moderation Controls</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {users.map((u) => {
+                  const isProcessing = actionLoadingId === u._id;
+                  const isAdmin = u.role === "admin";
+                  return (
+                    <tr key={u._id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900">{u.fullName}</div>
+                        <div className="text-xs text-slate-500 font-mono">@{u.username}</div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-600 font-mono">
+                        {u.email}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
+                            u.role === "admin"
+                              ? "bg-rose-100 text-rose-800"
+                              : u.role === "client"
+                              ? "bg-indigo-100 text-indigo-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}
+                        >
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant={u.isActive ? "success" : "danger"} size="sm">
+                          {u.isActive ? "Active" : "Deactivated"}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant={u.isVerified ? "primary" : "neutral"} size="sm">
+                          {u.isVerified ? "Verified" : "Unverified"}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            disabled={isAdmin || isProcessing}
+                            onClick={() => handleStatus(u)}
+                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                          >
+                            {u.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isAdmin || isProcessing}
+                            onClick={() => handleVerify(u)}
+                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                          >
+                            {u.isVerified ? "Revoke" : "Verify"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isAdmin || isProcessing}
+                            onClick={() => handleDelete(u)}
+                            className="rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs">
+            <span className="text-slate-600">Page {page} of {totalPages}</span>
+            <div className="flex gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+                className="rounded border border-slate-300 bg-white px-2.5 py-1 font-medium disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage(page + 1)}
+                className="rounded border border-slate-300 bg-white px-2.5 py-1 font-medium disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
       </div>
-
-      <div className="mt-6 flex items-center justify-between">
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() =>
-            setPage((current) => current - 1)
-          }
-          className="rounded-lg border bg-white px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Previous
-        </button>
-
-        <span className="text-sm text-gray-600">
-          Page {page} of {totalPages}
-        </span>
-
-        <button
-          type="button"
-          disabled={page >= totalPages}
-          onClick={() =>
-            setPage((current) => current + 1)
-          }
-          className="rounded-lg border bg-white px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Next
-        </button>
-      </div>
-    </main>
+    </div>
   );
 }

@@ -14,6 +14,14 @@ const NotificationSchema = new Schema(
     title: String,
     message: String,
     type: String,
+    link: {
+      type: String,
+      default: "",
+    },
+    data: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
     isRead: {
       type: Boolean,
       default: false,

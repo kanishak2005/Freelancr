@@ -15,6 +15,8 @@ export interface CreateNotificationData {
   title: string;
   message: string;
   type: NotificationType;
+  link?: string;
+  data?: Record<string, any>;
 }
 
 export interface NotificationQuery {

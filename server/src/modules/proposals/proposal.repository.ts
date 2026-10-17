@@ -1,5 +1,9 @@
 import { Proposal } from "./proposal.model";
 import { IProposal } from "./proposal.types";
+import {
+  getPaginationParams,
+  createPaginationMeta,
+} from "../../utils/pagination";
 
 const jobPopulate = {
   path: "job",
@@ -31,21 +35,48 @@ export class ProposalRepository {
       );
   }
 
-  static async findByJob(jobId: string) {
-    return Proposal.find({
-      job: jobId,
-    }).populate(
-      "freelancer",
-      "fullName username avatar"
-    );
+  static async findByJob(jobId: string, options?: any) {
+    const { page, limit, skip } = getPaginationParams(options);
+    const filter = { job: jobId };
+
+    const [proposals, total] = await Promise.all([
+      Proposal.find(filter)
+        .populate(
+          "freelancer",
+          "fullName username avatar"
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Proposal.countDocuments(filter),
+    ]);
+
+    return {
+      proposals,
+      ...createPaginationMeta(total, page, limit),
+    };
   }
 
   static async findByFreelancer(
-    freelancerId: string
+    freelancerId: string,
+    options?: any
   ) {
-    return Proposal.find({
-      freelancer: freelancerId,
-    }).populate(jobPopulate);
+    const { page, limit, skip } = getPaginationParams(options);
+    const filter = { freelancer: freelancerId };
+
+    const [proposals, total] = await Promise.all([
+      Proposal.find(filter)
+        .populate(jobPopulate)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Proposal.countDocuments(filter),
+    ]);
+
+    return {
+      proposals,
+      ...createPaginationMeta(total, page, limit),
+    };
   }
 
   static async findExisting(

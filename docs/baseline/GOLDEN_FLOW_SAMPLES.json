@@ -1,0 +1,302 @@
+{
+  "version": "1.0.0",
+  "description": "Sanitized golden request and response samples for Freelancr critical flows.",
+  "flows": {
+    "auth_register": {
+      "method": "POST",
+      "endpoint": "/api/v1/auth/register",
+      "request": {
+        "fullName": "Jane Doe",
+        "username": "janedoe",
+        "email": "jane.doe@example.com",
+        "password": "SecurePassword123!",
+        "role": "client"
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "User registered successfully",
+          "data": {
+            "user": {
+              "_id": "6703e3c0a1b2c3d4e5f60001",
+              "fullName": "Jane Doe",
+              "username": "janedoe",
+              "email": "jane.doe@example.com",
+              "role": "client",
+              "avatar": "",
+              "bio": "",
+              "phone": "",
+              "location": "",
+              "skills": [],
+              "resume": "",
+              "resumePublicId": "",
+              "portfolio": [],
+              "isVerified": false,
+              "isActive": true,
+              "createdAt": "2026-10-07T12:00:00.000Z",
+              "updatedAt": "2026-10-07T12:00:00.000Z"
+            },
+            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sanitized_access_token"
+          }
+        }
+      }
+    },
+    "auth_login": {
+      "method": "POST",
+      "endpoint": "/api/v1/auth/login",
+      "request": {
+        "email": "jane.doe@example.com",
+        "password": "SecurePassword123!"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Login successful",
+          "data": {
+            "user": {
+              "_id": "6703e3c0a1b2c3d4e5f60001",
+              "fullName": "Jane Doe",
+              "username": "janedoe",
+              "email": "jane.doe@example.com",
+              "role": "client",
+              "isVerified": false,
+              "isActive": true
+            },
+            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sanitized_access_token"
+          }
+        }
+      }
+    },
+    "jobs_create": {
+      "method": "POST",
+      "endpoint": "/api/v1/jobs",
+      "headers": {
+        "Authorization": "Bearer <sanitized_token>"
+      },
+      "request": {
+        "title": "Full-Stack Web App Development",
+        "description": "Looking for an experienced React and Node developer to build our SaaS dashboard.",
+        "category": "Web Development",
+        "skills": ["React", "Node.js", "TypeScript"],
+        "budget": 50000,
+        "budgetType": "fixed",
+        "experienceLevel": "intermediate",
+        "duration": "1 month",
+        "isRemote": true
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Job created successfully",
+          "data": {
+            "_id": "6703e3c0a1b2c3d4e5f60002",
+            "title": "Full-Stack Web App Development",
+            "description": "Looking for an experienced React and Node developer to build our SaaS dashboard.",
+            "category": "Web Development",
+            "skills": ["React", "Node.js", "TypeScript"],
+            "budget": 50000,
+            "budgetType": "fixed",
+            "experienceLevel": "intermediate",
+            "duration": "1 month",
+            "isRemote": true,
+            "client": "6703e3c0a1b2c3d4e5f60001",
+            "status": "open",
+            "proposalsCount": 0,
+            "createdAt": "2026-10-07T12:05:00.000Z"
+          }
+        }
+      }
+    },
+    "proposals_apply": {
+      "method": "POST",
+      "endpoint": "/api/v1/proposals",
+      "headers": {
+        "Authorization": "Bearer <sanitized_freelancer_token>"
+      },
+      "request": {
+        "job": "6703e3c0a1b2c3d4e5f60002",
+        "coverLetter": "I have 5+ years of experience with React, Node.js, and TypeScript. I can deliver this cleanly.",
+        "bidAmount": 45000,
+        "deliveryTime": 25
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Proposal submitted successfully",
+          "data": {
+            "_id": "6703e3c0a1b2c3d4e5f60003",
+            "job": "6703e3c0a1b2c3d4e5f60002",
+            "freelancer": "6703e3c0a1b2c3d4e5f60099",
+            "coverLetter": "I have 5+ years of experience with React, Node.js, and TypeScript. I can deliver this cleanly.",
+            "bidAmount": 45000,
+            "deliveryTime": 25,
+            "status": "pending",
+            "createdAt": "2026-10-07T12:10:00.000Z"
+          }
+        }
+      }
+    },
+    "contracts_create": {
+      "method": "POST",
+      "endpoint": "/api/v1/contracts",
+      "headers": {
+        "Authorization": "Bearer <sanitized_client_token>"
+      },
+      "request": {
+        "jobId": "6703e3c0a1b2c3d4e5f60002",
+        "proposalId": "6703e3c0a1b2c3d4e5f60003",
+        "title": "Full-Stack Web App Development Contract",
+        "description": "Milestone delivery for initial sprint.",
+        "amount": 45000,
+        "deliveryTime": 25
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Contract created successfully",
+          "data": {
+            "_id": "6703e3c0a1b2c3d4e5f60004",
+            "job": "6703e3c0a1b2c3d4e5f60002",
+            "proposal": "6703e3c0a1b2c3d4e5f60003",
+            "client": "6703e3c0a1b2c3d4e5f60001",
+            "freelancer": "6703e3c0a1b2c3d4e5f60099",
+            "title": "Full-Stack Web App Development Contract",
+            "amount": 45000,
+            "deliveryTime": 25,
+            "status": "active",
+            "startDate": "2026-10-07T12:15:00.000Z"
+          }
+        }
+      }
+    },
+    "payments_create_order": {
+      "method": "POST",
+      "endpoint": "/api/v1/payments/create-order",
+      "headers": {
+        "Authorization": "Bearer <sanitized_client_token>"
+      },
+      "request": {
+        "contractId": "6703e3c0a1b2c3d4e5f60004"
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Payment order created successfully",
+          "data": {
+            "payment": {
+              "_id": "6703e3c0a1b2c3d4e5f60005",
+              "contract": "6703e3c0a1b2c3d4e5f60004",
+              "client": "6703e3c0a1b2c3d4e5f60001",
+              "freelancer": "6703e3c0a1b2c3d4e5f60099",
+              "amount": 45000,
+              "currency": "INR",
+              "razorpayOrderId": "order_Oz1x2Y3z4A5b6C",
+              "status": "created",
+              "createdAt": "2026-10-07T12:20:00.000Z"
+            },
+            "order": {
+              "id": "order_Oz1x2Y3z4A5b6C",
+              "entity": "order",
+              "amount": 4500000,
+              "currency": "INR",
+              "receipt": "contract_6703e3c0a1b2c3d4e5f60004",
+              "status": "created"
+            }
+          }
+        }
+      }
+    },
+    "payments_verify": {
+      "method": "POST",
+      "endpoint": "/api/v1/payments/verify",
+      "headers": {
+        "Authorization": "Bearer <sanitized_client_token>"
+      },
+      "request": {
+        "razorpay_order_id": "order_Oz1x2Y3z4A5b6C",
+        "razorpay_payment_id": "pay_Oz1x2Y3z4A5b6C",
+        "razorpay_signature": "9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Payment verified successfully",
+          "data": {
+            "payment": {
+              "_id": "6703e3c0a1b2c3d4e5f60005",
+              "status": "paid",
+              "razorpayPaymentId": "pay_Oz1x2Y3z4A5b6C",
+              "razorpaySignature": "9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e",
+              "paidAt": "2026-10-07T12:21:00.000Z"
+            }
+          }
+        }
+      }
+    },
+    "payments_webhook_captured": {
+      "method": "POST",
+      "endpoint": "/api/v1/payments/webhook",
+      "headers": {
+        "x-razorpay-signature": "<hmac_sha256_of_raw_body>"
+      },
+      "request": {
+        "entity": "event",
+        "account_id": "acc_mock123",
+        "event": "payment.captured",
+        "contains": ["payment"],
+        "payload": {
+          "payment": {
+            "entity": {
+              "id": "pay_Oz1x2Y3z4A5b6C",
+              "order_id": "order_Oz1x2Y3z4A5b6C",
+              "amount": 4500000,
+              "currency": "INR",
+              "status": "captured"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok"
+        }
+      }
+    },
+    "chat_send_message": {
+      "method": "POST",
+      "endpoint": "/api/v1/chat",
+      "headers": {
+        "Authorization": "Bearer <sanitized_token>"
+      },
+      "request": {
+        "receiver": "6703e3c0a1b2c3d4e5f60099",
+        "message": "Hi, I have reviewed your proposal and look forward to working with you.",
+        "attachments": []
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Message sent successfully",
+          "data": {
+            "_id": "6703e3c0a1b2c3d4e5f60006",
+            "sender": "6703e3c0a1b2c3d4e5f60001",
+            "receiver": "6703e3c0a1b2c3d4e5f60099",
+            "message": "Hi, I have reviewed your proposal and look forward to working with you.",
+            "attachments": [],
+            "isRead": false,
+            "createdAt": "2026-10-07T12:25:00.000Z"
+          }
+        }
+      }
+    }
+  }
+}

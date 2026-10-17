@@ -89,4 +89,31 @@ router.delete(
   AdminController.deleteJob
 );
 
+// Audit & Health (PRD 09)
+
+router.get(
+  "/audit",
+  AdminController.getAuditLogs
+);
+
+router.get(
+  "/health",
+  AdminController.getHealth
+);
+
+router.get(
+  "/gateway",
+  AdminController.getGatewayDiagnostics
+);
+
+router.get(
+  "/commission/summary",
+  AdminController.getCommissionSummary
+);
+
+router.get(
+  "/commission/ledger",
+  AdminController.getCommissionLedger
+);
+
 export default router;

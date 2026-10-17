@@ -5,6 +5,22 @@ export interface JobClient {
   fullName: string;
   username: string;
   avatar?: string;
+  rating?: number;
+  reviewCount?: number;
+  completedProjects?: number;
+}
+
+export interface MatchScoreResult {
+  score: number;
+  breakdown: {
+    skills: { weight: number; score: number };
+    experience: { weight: number; score: number };
+    category: { weight: number; score: number };
+    budget: { weight: number; score: number };
+    preferences: { weight: number; score: number };
+  };
+  matchedSkills: string[];
+  missingSkills: string[];
 }
 
 export type JobStatus =
@@ -38,6 +54,9 @@ export interface Job {
   proposalsCount: number;
   createdAt: string;
   updatedAt: string;
+  isSaved?: boolean;
+  savedAt?: string;
+  matchScore?: MatchScoreResult | null;
 }
 
 export interface CreateJobPayload {
@@ -54,11 +73,48 @@ export interface CreateJobPayload {
   attachments: string[];
 }
 
-export const getAllJobs = async () => {
+export const getAllJobs = async (
+  params?: Record<string, string | number | boolean | undefined>
+) => {
   const response = await api.get<{
     success: boolean;
     data: Job[];
-  }>("/jobs");
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }>("/jobs", { params });
+
+  return response.data.data;
+};
+
+export const saveJob = async (jobId: string) => {
+  const response = await api.post<{
+    success: boolean;
+    message: string;
+    isSaved: boolean;
+  }>(`/jobs/${jobId}/save`);
+
+  return response.data;
+};
+
+export const unsaveJob = async (jobId: string) => {
+  const response = await api.delete<{
+    success: boolean;
+    message: string;
+    isSaved: boolean;
+  }>(`/jobs/${jobId}/save`);
+
+  return response.data;
+};
+
+export const getSavedJobs = async () => {
+  const response = await api.get<{
+    success: boolean;
+    data: Job[];
+  }>("/jobs/saved");
 
   return response.data.data;
 };
@@ -120,15 +176,23 @@ export const deleteJob = async (
 };
 
 export const searchJobs = async (
-  keyword: string
+  keyword: string,
+  signal?: AbortSignal
 ) => {
   const response = await api.get<{
     success: boolean;
     data: Job[];
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
   }>("/jobs/search", {
     params: {
       keyword,
     },
+    signal,
   });
 
   return response.data.data;

@@ -63,14 +63,13 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Analytics
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Platform-Wide Analytics
         </h1>
-
-        <p className="mt-2 text-gray-600">
-          Overview of the Freelancr platform.
+        <p className="mt-1 text-sm text-slate-500">
+          Aggregated activity metrics, contract lifecycles, and payment volumes across Freelancr.
         </p>
       </div>
 
@@ -221,6 +220,6 @@ export default function AnalyticsPage() {
           />
         </div>
       </section>
-    </main>
+    </div>
   );
 }

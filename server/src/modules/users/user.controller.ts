@@ -49,14 +49,22 @@ export class UserController {
   }
 
   static async getAllUsers(
-    _req: Request,
+    req: Request,
     res: Response
   ) {
-    const users = await UserService.getAllUsers();
+    const result = await UserService.getAllUsers(req.query);
 
     return res.status(200).json({
       success: true,
-      data: users,
+      data: result.users,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
     });
   }
 
@@ -125,10 +133,11 @@ static async removePortfolio(
   req: AuthRequest,
   res: Response
 ) {
+  const publicId = req.params.publicId || req.body?.publicId;
   const user =
     await UserService.removePortfolio(
       req.user!.id,
-      req.body.publicId
+      publicId
     );
 
   return res.status(200).json({

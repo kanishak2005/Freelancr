@@ -6,6 +6,12 @@ export type ContractStatus =
   | "cancelled"
   | "disputed";
 
+export type ContractExecutionMode =
+  | "simple"
+  | "milestone";
+
+export type ContractFundingStatus = "pending_funding" | "funded";
+
 export interface IContract extends Document {
   job: Types.ObjectId;
   proposal: Types.ObjectId;
@@ -19,6 +25,15 @@ export interface IContract extends Document {
   deliveryTime: number;
 
   status: ContractStatus;
+  fundingStatus: ContractFundingStatus;
+  executionMode: ContractExecutionMode;
+  allocatedMilestoneAmount?: number;
+  maintenanceLock?: boolean;
+  maintenanceLockToken?: string | null;
+  maintenanceLockExpiresAt?: Date | null;
+
+  freelancerConfirmedAt?: Date | null;
+  clientApprovedAt?: Date | null;
 
   startDate: Date;
   endDate?: Date;

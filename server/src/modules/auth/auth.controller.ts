@@ -8,7 +8,7 @@ export class AuthController {
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -28,7 +28,7 @@ export class AuthController {
 
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -69,7 +69,7 @@ static async refresh(req: Request, res: Response) {
 
   res.cookie("refreshToken", result.refreshToken, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });

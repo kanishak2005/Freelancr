@@ -25,10 +25,14 @@ export class ChatController {
     req: AuthRequest,
     res: Response
   ) {
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const limit = Number(req.query.limit) || 50;
+
     const chats =
       await ChatService.getConversation(
         req.user!.id,
-        req.params.userId as string
+        req.params.userId as string,
+        { cursor, limit }
       );
 
     return res.status(200).json({

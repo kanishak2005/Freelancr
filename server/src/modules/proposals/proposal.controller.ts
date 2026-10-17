@@ -41,14 +41,23 @@ export class ProposalController {
     req: AuthRequest,
     res: Response
   ) {
-    const proposals =
+    const result =
       await ProposalService.getMyProposals(
-        req.user!.id
+        req.user!.id,
+        req.query
       );
 
     return res.status(200).json({
       success: true,
-      data: proposals,
+      data: result.proposals,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
     });
   }
 
@@ -56,16 +65,25 @@ export class ProposalController {
     req: AuthRequest,
     res: Response
   ) {
-    const proposals =
+    const result =
       await ProposalService.getJobProposals(
         req.params.jobId as string,
         req.user!.id,
-        req.user!.role
+        req.user!.role,
+        req.query
       );
 
     return res.status(200).json({
       success: true,
-      data: proposals,
+      data: result.proposals,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
     });
   }
 

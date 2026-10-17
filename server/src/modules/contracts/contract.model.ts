@@ -62,6 +62,49 @@ const contractSchema = new Schema<IContract>(
       default: "active",
     },
 
+    fundingStatus: {
+      type: String,
+      enum: ["pending_funding", "funded"],
+      default: "pending_funding",
+    },
+
+    executionMode: {
+      type: String,
+      enum: ["simple", "milestone"],
+      default: "simple",
+    },
+
+    allocatedMilestoneAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    maintenanceLock: {
+      type: Boolean,
+      default: false,
+    },
+
+    maintenanceLockToken: {
+      type: String,
+      default: null,
+    },
+
+    maintenanceLockExpiresAt: {
+      type: Date,
+      default: null,
+    },
+
+    freelancerConfirmedAt: {
+      type: Date,
+      default: null,
+    },
+
+    clientApprovedAt: {
+      type: Date,
+      default: null,
+    },
+
     startDate: {
       type: Date,
       default: Date.now,
@@ -75,6 +118,9 @@ const contractSchema = new Schema<IContract>(
     timestamps: true,
   }
 );
+
+contractSchema.index({ client: 1, createdAt: -1 });
+contractSchema.index({ freelancer: 1, createdAt: -1 });
 
 export const Contract = model<IContract>(
   "Contract",

@@ -11,6 +11,8 @@ import {
   ApiError,
   HTTP_STATUS,
 } from "../../shared";
+import { getSocket } from "../../config/socket";
+import { SOCKET_EVENTS } from "../../socket/event";
 
 export class NotificationService {
 
@@ -18,9 +20,27 @@ export class NotificationService {
     data: CreateNotificationData
   ) {
 
-    return NotificationRepository.create(
+    const notification = await NotificationRepository.create(
       data
     );
+
+    try {
+      const io = getSocket();
+      if (io) {
+        io.to(`user:${data.recipient}`).emit(
+          SOCKET_EVENTS.NOTIFICATION_CREATED,
+          notification
+        );
+        io.to(`user:${data.recipient}`).emit(
+          "notification",
+          notification
+        );
+      }
+    } catch (_error) {
+      // Best-effort real-time emission must never fail domain persistence
+    }
+
+    return notification;
   }
 
   static async getMyNotifications(

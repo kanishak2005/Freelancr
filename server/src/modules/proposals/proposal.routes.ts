@@ -6,6 +6,8 @@ import { validate } from "../../middleware/validate.middleware";
 import {
   applyProposalValidation,
   updateProposalValidation,
+  proposalIdValidation,
+  jobProposalsValidation,
 } from "./proposal.validation";
 
 const router = Router();
@@ -30,6 +32,8 @@ router.get(
   "/job/:jobId",
   authenticate,
   authorize("client", "admin"),
+  jobProposalsValidation,
+  validate,
   ProposalController.getJobProposals
 );
 
@@ -37,6 +41,8 @@ router.get(
   "/:id",
   authenticate,
   authorize("client", "freelancer", "admin"),
+  proposalIdValidation,
+  validate,
   ProposalController.getProposal
 );
 
@@ -44,6 +50,7 @@ router.patch(
   "/:id",
   authenticate,
   authorize("freelancer"),
+  proposalIdValidation,
   updateProposalValidation,
   validate,
   ProposalController.updateProposal
@@ -53,6 +60,8 @@ router.delete(
   "/:id",
   authenticate,
   authorize("freelancer"),
+  proposalIdValidation,
+  validate,
   ProposalController.withdrawProposal
 );
 

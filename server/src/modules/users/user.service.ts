@@ -72,8 +72,8 @@ export class UserService {
     return user;
   }
 
-  static async getAllUsers() {
-    return UserRepository.findAll();
+  static async getAllUsers(options?: any) {
+    return UserRepository.findAll(options);
   }
 
   static async deleteMyAccount(userId: string) {

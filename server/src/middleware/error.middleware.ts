@@ -3,7 +3,7 @@ import { ApiError } from "../shared";
 
 export const errorMiddleware = (
   err: any,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) => {
@@ -30,13 +30,17 @@ export const errorMiddleware = (
         ? "Internal Server Error"
         : err.message || "Request failed";
 
+  const requestId = (req as any)?.id || res.getHeader("X-Request-ID");
+
   const response: {
     success: false;
     message: string;
+    requestId?: string;
     error?: unknown;
   } = {
     success: false,
     message,
+    ...(requestId ? { requestId: String(requestId) } : {}),
   };
 
   if (process.env.NODE_ENV === "development") {

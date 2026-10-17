@@ -100,7 +100,8 @@ export class ChatService {
 
   static async getConversation(
     userId: string,
-    otherUserId: string
+    otherUserId: string,
+    options?: { cursor?: string; limit?: number }
   ) {
     if (
       !Types.ObjectId.isValid(userId) ||
@@ -138,7 +139,8 @@ export class ChatService {
 
     return ChatRepository.getConversation(
       userId,
-      otherUserId
+      otherUserId,
+      options
     );
   }
 

@@ -15,10 +15,12 @@ import {
 } from "../services/proposals.api";
 
 import ProposalForm from "../components/proposals/ProposalForm";
+import { useAppSelector } from "../store/hooks";
 
 export default function JobDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useAppSelector((state) => state.auth.user);
 
   const [job, setJob] =
     useState<Job | null>(null);
@@ -236,7 +238,7 @@ export default function JobDetailsPage() {
               </p>
             </div>
 
-            {job.status === "open" && (
+            {job.status === "open" && user?.role === "freelancer" && (
               <button
                 onClick={() =>
                   setShowProposalForm(true)
@@ -253,16 +255,17 @@ export default function JobDetailsPage() {
               </p>
             )}
 
-            {job.status === "open" && (
+            {/* If user is the job owner client or admin, show link to Review Proposals */}
+            {(user?.role === "admin" || (user?.role === "client" && user?.id === job.client._id)) && (
               <button
                 onClick={() =>
                   navigate(
                     `/jobs/${job._id}/proposals`
                   )
                 }
-                className="mt-3 w-full rounded-lg border px-5 py-3 font-medium hover:bg-gray-50"
+                className="mt-4 w-full rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 px-5 py-3 font-medium hover:bg-indigo-100 transition-colors"
               >
-                View Proposals
+                Review Received Proposals ({job.proposalsCount})
               </button>
             )}
           </div>

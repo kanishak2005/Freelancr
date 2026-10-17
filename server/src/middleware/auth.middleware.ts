@@ -91,3 +91,45 @@ export const authenticate = async (
     });
   }
 };
+
+export const optionalAuthenticate = async (
+  req: AuthRequest,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.substring(7).trim();
+    if (!token) {
+      return next();
+    }
+
+    const secret = process.env.JWT_ACCESS_SECRET;
+    if (!secret) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, secret) as AccessTokenPayload;
+    if (!decoded?.id) {
+      return next();
+    }
+
+    const user = await UserRepository.findById(decoded.id);
+    if (user && user.isActive) {
+      req.user = {
+        id: user._id.toString(),
+        role: user.role,
+      };
+    }
+
+    next();
+  } catch {
+    // If token verification fails, proceed as unauthenticated public request
+    next();
+  }
+};

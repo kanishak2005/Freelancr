@@ -1,4 +1,52 @@
-import { body } from "express-validator";
+import { body, param, query } from "express-validator";
+
+export const jobIdValidation = [
+  param("id")
+    .isMongoId()
+    .withMessage("Invalid job ID"),
+];
+
+export const searchJobValidation = [
+  query("keyword")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Search keyword must not exceed 100 characters"),
+];
+
+export const filterJobsValidation = [
+  query("category")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 100 }),
+
+  query("budgetType")
+    .optional()
+    .isIn(["fixed", "hourly"])
+    .withMessage("Invalid budget type"),
+
+  query("experienceLevel")
+    .optional()
+    .isIn(["entry", "intermediate", "expert"])
+    .withMessage("Invalid experience level"),
+
+  query("status")
+    .optional()
+    .isIn(["open", "in_progress", "completed", "cancelled"])
+    .withMessage("Invalid status"),
+
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be at least 1"),
+
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+];
 
 export const createJobValidation = [
   body("title")

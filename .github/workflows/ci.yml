@@ -1,0 +1,69 @@
+name: Freelancr CI Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-and-build:
+    name: Lint, Test & Build Validation
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      - name: Install Server Dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Install Client Dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Run Server Typecheck & Build
+        working-directory: server
+        run: npm run build
+
+      - name: Run Client Typecheck & Build
+        working-directory: client
+        run: npm run build
+
+      - name: Run Server PRD 06 Regression Suite
+        working-directory: server
+        run: npx tsx --test test/prd06-*.test.ts
+
+      - name: Run Server PRD 07 Payments & Payouts Suite
+        working-directory: server
+        run: npx tsx --test test/prd07-payments-payouts-refunds.test.ts
+
+      - name: Run Server PRD 08 Chat, Uploads & Notifications Suite
+        working-directory: server
+        run: npx tsx --test test/prd08-chat-notifications-uploads.test.ts
+
+      - name: Run Server PRD 09 Admin, Support & Disputes Suite
+        working-directory: server
+        run: npx tsx --test test/prd09-admin-support-disputes-health.test.ts
+
+      - name: Run Server PRD 10 API Standardization Suite
+        working-directory: server
+        run: npx tsx --test test/prd10-api-migrations-integrity.test.ts
+
+      - name: Run Server PRD 11 Observability & Health Suite
+        working-directory: server
+        run: npx tsx --test test/prd11-observability-deployment.test.ts

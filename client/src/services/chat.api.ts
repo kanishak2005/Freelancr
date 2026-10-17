@@ -22,13 +22,24 @@ export interface ChatMessage {
 }
 
 export const getConversation = async (
-  userId: string
+  userId: string,
+  params?: { cursor?: string; limit?: number }
 ) => {
   const response = await api.get(
-    `/chat/conversation/${userId}`
+    `/chat/conversation/${userId}`,
+    { params }
   );
 
   return response.data.data as ChatMessage[];
+};
+
+export const sendMessage = async (data: {
+  receiver: string;
+  message: string;
+  attachments?: string[];
+}) => {
+  const response = await api.post("/chat", data);
+  return response.data.data as ChatMessage;
 };
 
 export const deleteMessage = async (

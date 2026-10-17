@@ -3,6 +3,7 @@ import { socket } from "../lib/socket";
 import {
   getConversation,
   deleteMessage,
+  sendMessage,
   type ChatMessage,
 } from "../services/chat.api";
 
@@ -98,7 +99,7 @@ export default function ChatPage({
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const trimmedMessage = message.trim();
 
     if (!trimmedMessage) {
@@ -110,21 +111,30 @@ export default function ChatPage({
       return;
     }
 
-    if (!socket.connected) {
-      alert("Socket is not connected.");
-      return;
-    }
-
     setSending(true);
 
-    socket.emit("send_message", {
-      receiver: userId,
-      message: trimmedMessage,
-      attachments: [],
-    });
-
-    setMessage("");
-    setSending(false);
+    try {
+      if (socket.connected) {
+        socket.emit("send_message", {
+          receiver: userId,
+          message: trimmedMessage,
+          attachments: [],
+        });
+      } else {
+        // Safe REST fallback when socket connection is interrupted
+        const savedMessage = await sendMessage({
+          receiver: userId,
+          message: trimmedMessage,
+          attachments: [],
+        });
+        setMessages((prev) => [...prev, savedMessage]);
+      }
+      setMessage("");
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || "Failed to send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleDeleteMessage = async (

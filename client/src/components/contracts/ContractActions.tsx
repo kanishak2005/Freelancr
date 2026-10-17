@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   cancelContract,
   completeContract,
+  confirmContractCompletion,
   type Contract,
 } from "../../services/contracts.api";
 
@@ -56,9 +57,11 @@ export default function ContractActions({
     );
   }
 
+  const isPendingFunding = contract.fundingStatus === "pending_funding";
+
   const handleComplete = async () => {
     const confirmed = window.confirm(
-      "Are you sure you want to mark this contract as completed?"
+      "Confirm that you approve the completed work for this contract?"
     );
 
     if (!confirmed) return;
@@ -76,6 +79,32 @@ export default function ContractActions({
       setError(
         err?.response?.data?.message ||
           "Failed to complete contract"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFreelancerConfirm = async () => {
+    const confirmed = window.confirm(
+      "Confirm that all deliverables have been submitted and you are ready for final completion review?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await confirmContractCompletion(
+        contract._id
+      );
+
+      onUpdated(response.data);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Failed to confirm contract completion"
       );
     } finally {
       setLoading(false);
@@ -116,15 +145,54 @@ export default function ContractActions({
         </div>
       )}
 
+      {/* Dual Completion Indicator Badge */}
+      <div className="mb-5 flex flex-wrap items-center gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+        <span className="text-xs font-semibold text-slate-700">Completion Protocol:</span>
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
+            contract.clientApprovedAt
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-amber-50 text-amber-700 border-amber-200"
+          }`}
+        >
+          Client Approval: {contract.clientApprovedAt ? "Approved" : "Pending Review"}
+        </span>
+
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
+            contract.freelancerConfirmedAt
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-amber-50 text-amber-700 border-amber-200"
+          }`}
+        >
+          Freelancer Sign-Off: {contract.freelancerConfirmedAt ? "Confirmed" : "Awaiting Confirmation"}
+        </span>
+      </div>
+
       <div className="flex flex-wrap gap-3">
         {isClient && (
           <button
             type="button"
             onClick={handleComplete}
-            disabled={loading}
-            className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            disabled={loading || isPendingFunding}
+            className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
           >
-            {loading ? "Processing..." : "Complete Contract"}
+            {loading ? "Processing..." : contract.clientApprovedAt ? "Re-Approve Completion" : "Approve Work & Complete"}
+          </button>
+        )}
+
+        {isFreelancer && (
+          <button
+            type="button"
+            onClick={handleFreelancerConfirm}
+            disabled={loading || isPendingFunding || Boolean(contract.freelancerConfirmedAt)}
+            className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-xs"
+          >
+            {loading
+              ? "Processing..."
+              : contract.freelancerConfirmedAt
+              ? "Completion Confirmed ✓"
+              : "Confirm Work Completion"}
           </button>
         )}
 
@@ -132,16 +200,18 @@ export default function ContractActions({
           type="button"
           onClick={handleCancel}
           disabled={loading}
-          className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          className="rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs"
         >
           {loading ? "Processing..." : "Cancel Contract"}
         </button>
       </div>
 
-      <p className="mt-3 text-xs text-gray-500">
-        {isClient
-          ? "You are the client. You can complete or cancel this contract."
-          : "You are the freelancer. You can cancel this contract."}
+      <p className="mt-3 text-xs text-slate-500">
+        {isPendingFunding
+          ? "Contract requires upfront client funding before deliverables or completion can be confirmed."
+          : isClient
+          ? "Both client review approval and freelancer sign-off are required to release funds for admin payout execution."
+          : "Confirming completion signifies that all contractual obligations have been fulfilled."}
       </p>
     </div>
   );

@@ -11,7 +11,8 @@ export class ContractController {
     const contract =
       await ContractService.createFromProposal(
         req.user!.id,
-        req.body.proposalId
+        req.body.proposalId,
+        req.body.executionMode
       );
 
     return res.status(201).json({
@@ -41,14 +42,30 @@ export class ContractController {
     req: AuthRequest,
     res: Response
   ) {
-    const contracts =
+    const result: any =
       await ContractService.getMyContracts(
-        req.user!.id
+        req.user!.id,
+        req.query
       );
+
+    if (result && result.contracts && result.totalPages !== undefined) {
+      return res.status(200).json({
+        success: true,
+        data: result.contracts,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+          hasNextPage: result.hasNextPage,
+          hasPrevPage: result.hasPrevPage,
+        },
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      data: contracts,
+      data: result,
     });
   }
 
@@ -64,7 +81,24 @@ export class ContractController {
 
     return res.status(200).json({
       success: true,
-      message: "Contract completed successfully",
+      message: "Contract completion/approval recorded successfully",
+      data: contract,
+    });
+  }
+
+  static async confirmCompletion(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const contract =
+      await ContractService.confirmCompletion(
+        req.params.id as string,
+        req.user!.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Contract completion confirmed successfully",
       data: contract,
     });
   }
@@ -83,6 +117,23 @@ export class ContractController {
       success: true,
       message: "Contract cancelled successfully",
       data: contract,
+    });
+  }
+
+  static async getTimeline(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const timeline =
+      await ContractService.getTimeline(
+        req.params.id as string,
+        req.user!.id,
+        req.user!.role
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: timeline,
     });
   }
 }

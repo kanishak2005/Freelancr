@@ -1,5 +1,9 @@
 import { User } from "./user.model";
 import { IUser } from "./user.types";
+import {
+  getPaginationParams,
+  createPaginationMeta,
+} from "../../utils/pagination";
 
 export class UserRepository {
   static async create(user: IUser) {
@@ -118,14 +122,31 @@ export class UserRepository {
     );
   }
 
-  static async findAll() {
-    return User.find()
-      .select(
-        "fullName username role avatar bio location skills resume portfolio isVerified createdAt updatedAt"
-      )
-      .sort({
-        createdAt: -1,
-      });
+  static async findAll(options?: any) {
+    const { page, limit, skip } = getPaginationParams(options);
+
+    const filter: Record<string, unknown> = { isActive: true };
+    if (options?.role && ["client", "freelancer"].includes(options.role)) {
+      filter.role = options.role;
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select(
+          "fullName username role avatar bio location skills resume portfolio isVerified createdAt updatedAt"
+        )
+        .sort({
+          createdAt: -1,
+        })
+        .skip(skip)
+        .limit(limit),
+      User.countDocuments(filter),
+    ]);
+
+    return {
+      users,
+      ...createPaginationMeta(total, page, limit),
+    };
   }
 
   static async deleteUser(id: string) {

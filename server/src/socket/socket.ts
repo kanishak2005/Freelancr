@@ -194,10 +194,20 @@ export const registerSocketHandlers = (
             SOCKET_EVENTS.NEW_MESSAGE,
             chat
           );
+        io.to(`user:${receiverId}`)
+          .emit(
+            SOCKET_EVENTS.CHAT_MESSAGE_CREATED,
+            chat
+          );
 
         io.to(`user:${senderId}`)
           .emit(
             SOCKET_EVENTS.NEW_MESSAGE,
+            chat
+          );
+        io.to(`user:${senderId}`)
+          .emit(
+            SOCKET_EVENTS.CHAT_MESSAGE_CREATED,
             chat
           );
 

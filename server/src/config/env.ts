@@ -28,8 +28,14 @@ export const env = {
   JWT_ACCESS_SECRET:
     requiredEnv("JWT_ACCESS_SECRET"),
 
+  JWT_ACCESS_EXPIRES_IN:
+    process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+
   JWT_REFRESH_SECRET:
     requiredEnv("JWT_REFRESH_SECRET"),
+
+  JWT_REFRESH_EXPIRES_IN:
+    process.env.JWT_REFRESH_EXPIRES_IN || "7d",
 
   CLIENT_URL:
     process.env.CLIENT_URL ||

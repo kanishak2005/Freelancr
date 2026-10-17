@@ -88,6 +88,13 @@ export class AuthService {
       );
     }
 
+    if (!user.isActive) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "Your account has been deactivated"
+      );
+    }
+
     const accessToken = generateAccessToken({
       id: user._id,
       role: user.role,
@@ -111,7 +118,7 @@ export class AuthService {
     };
   }
   static async getCurrentUser(userId: string) {
-  const user = await UserRepository.findByIdWithPassword(userId);
+  const user = await UserRepository.findById(userId);
 
   if (!user) {
     throw new ApiError(
@@ -147,6 +154,13 @@ static async refresh(refreshToken: string) {
     throw new ApiError(
       HTTP_STATUS.UNAUTHORIZED,
       "Invalid refresh token"
+    );
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(
+      HTTP_STATUS.FORBIDDEN,
+      "Your account has been deactivated"
     );
   }
 
@@ -215,37 +229,32 @@ const user = await UserRepository.findByIdWithPassword(userId);
 static async forgotPassword(email: string) {
   const user = await UserRepository.findByEmail(email);
 
-  if (!user) {
-    throw new ApiError(
-      HTTP_STATUS.NOT_FOUND,
-      "User with this email does not exist"
+  if (user && user.isActive) {
+    const {
+      plainToken,
+      hashedToken,
+      expires,
+    } = generateResetToken();
+
+    await UserRepository.saveResetToken(
+      user._id.toString(),
+      hashedToken,
+      expires
+    );
+
+    const resetLink =
+      `${process.env.CLIENT_URL || "http://localhost:5173"}` +
+      `/reset-password?token=${plainToken}`;
+
+    await EmailService.sendPasswordResetEmail(
+      user.email,
+      resetLink
     );
   }
 
-  const {
-    plainToken,
-    hashedToken,
-    expires,
-  } = generateResetToken();
-
-  await UserRepository.saveResetToken(
-    user._id.toString(),
-    hashedToken,
-    expires
-  );
-
-  const resetLink =
-    `${process.env.CLIENT_URL || "http://localhost:5173"}` +
-    `/reset-password?token=${plainToken}`;
-
-  await EmailService.sendPasswordResetEmail(
-    user.email,
-    resetLink
-  );
-
   return {
     message:
-      "Password reset link sent successfully",
+      "If an account with that email exists, a password reset link has been sent.",
   };
 }
 

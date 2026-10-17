@@ -20,8 +20,26 @@ import {
 
 import ContractStatusBadge from "../components/contracts/ContractStatusBadge";
 import ContractActions from "../components/contracts/ContractActions";
+import { MilestoneSection } from "../components/contracts/MilestoneSection";
+import { DeliverableSection } from "../components/contracts/DeliverableSection";
+import { TimelineSection } from "../components/contracts/TimelineSection";
 import ReviewCard from "../components/reviews/ReviewCard";
 import ReviewForm from "../components/reviews/ReviewForm";
+import { FinancialSection } from "../components/contracts/FinancialSection";
+import {
+  getMyPayments,
+  getPayoutEligibility,
+  type PayoutEligibility,
+} from "../services/payments.api";
+import {
+  getContractMilestones,
+  getContractDeliverables,
+  getContractTimeline,
+  type ContractMilestone,
+  type ContractDeliverable,
+  type ContractTimelineItem,
+} from "../services/contracts.api";
+
 
 export default function ContractDetailsPage() {
   const { id } = useParams<{
@@ -50,6 +68,63 @@ export default function ContractDetailsPage() {
   const [reviewError, setReviewError] =
     useState("");
 
+  const [milestones, setMilestones] = useState<ContractMilestone[]>([]);
+  const [deliverables, setDeliverables] = useState<ContractDeliverable[]>([]);
+  const [timeline, setTimeline] = useState<ContractTimelineItem[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [paymentRecord, setPaymentRecord] = useState<any>(null);
+  const [eligibility, setEligibility] = useState<PayoutEligibility | null>(null);
+
+  const loadFinancials = useCallback(async () => {
+    if (!id) return;
+    try {
+      const [payments, elig] = await Promise.all([
+        getMyPayments().catch(() => []),
+        getPayoutEligibility(id).catch(() => null),
+      ]);
+      const currentPayment = (payments || []).find(
+        (p: any) => p.contract?._id === id || p.contract === id
+      );
+      setPaymentRecord(currentPayment || null);
+      setEligibility(elig);
+    } catch {
+      // Best-effort load
+    }
+  }, [id]);
+
+  const loadMilestones = useCallback(async () => {
+    if (!id) return;
+    try {
+      const data = await getContractMilestones(id);
+      setMilestones(data);
+    } catch {
+      // Best-effort load
+    }
+  }, [id]);
+
+  const loadDeliverables = useCallback(async () => {
+    if (!id) return;
+    try {
+      const data = await getContractDeliverables(id);
+      setDeliverables(data);
+    } catch {
+      // Best-effort load
+    }
+  }, [id]);
+
+  const loadTimeline = useCallback(async () => {
+    if (!id) return;
+    try {
+      setTimelineLoading(true);
+      const data = await getContractTimeline(id);
+      setTimeline(data);
+    } catch {
+      // Best-effort load
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, [id]);
+
   const loadReviews = useCallback(
     async () => {
       if (!id) return;
@@ -65,7 +140,7 @@ export default function ContractDetailsPage() {
       } catch (err: any) {
         setReviewError(
           err?.response?.data?.message ||
-            "Failed to load reviews"
+          "Failed to load reviews"
         );
       } finally {
         setReviewsLoading(false);
@@ -73,6 +148,7 @@ export default function ContractDetailsPage() {
     },
     [id]
   );
+
 
   useEffect(() => {
     const loadContract = async () => {
@@ -93,7 +169,7 @@ export default function ContractDetailsPage() {
       } catch (err: any) {
         setError(
           err?.response?.data?.message ||
-            "Failed to load contract"
+          "Failed to load contract"
         );
       } finally {
         setLoading(false);
@@ -105,7 +181,12 @@ export default function ContractDetailsPage() {
 
   useEffect(() => {
     loadReviews();
-  }, [loadReviews]);
+    loadMilestones();
+    loadDeliverables();
+    loadTimeline();
+    loadFinancials();
+  }, [loadReviews, loadMilestones, loadDeliverables, loadTimeline, loadFinancials]);
+
 
   if (loading) {
     return (
@@ -198,10 +279,30 @@ export default function ContractDetailsPage() {
             </p>
           </div>
 
-          <ContractStatusBadge
-            status={contract.status}
-          />
+          <div className="flex flex-col items-end gap-2">
+            <ContractStatusBadge
+              status={contract.status}
+            />
+            {contract.fundingStatus === "pending_funding" ? (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                ● Awaiting Upfront Client Funding
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                ✓ Funded in Platform Hold
+              </span>
+            )}
+          </div>
         </div>
+
+        {contract.fundingStatus === "pending_funding" && (
+          <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50/80 p-4 text-xs text-amber-900 leading-relaxed">
+            <span className="font-bold">Important:</span>{" "}
+            {isClient
+              ? "This contract requires upfront payment before work deliverables can be accepted or payouts released. Please fund the agreed amount below using Razorpay."
+              : "This contract is awaiting upfront funding from the client. Do not deliver work deliverables until the contract status reflects verified platform funding."}
+          </div>
+        )}
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -244,8 +345,8 @@ export default function ContractDetailsPage() {
             <p className="mt-1 font-medium">
               {contract.endDate
                 ? new Date(
-                    contract.endDate
-                  ).toLocaleDateString()
+                  contract.endDate
+                ).toLocaleDateString()
                 : "Not completed"}
             </p>
           </div>
@@ -259,17 +360,17 @@ export default function ContractDetailsPage() {
 
             <p className="mt-1 font-semibold">
               {typeof contract.client ===
-              "string"
+                "string"
                 ? contract.client
                 : contract.client.fullName}
             </p>
 
             {typeof contract.client !==
               "string" && (
-              <p className="text-sm text-gray-500">
-                @{contract.client.username}
-              </p>
-            )}
+                <p className="text-sm text-gray-500">
+                  @{contract.client.username}
+                </p>
+              )}
           </div>
 
           <div>
@@ -279,17 +380,17 @@ export default function ContractDetailsPage() {
 
             <p className="mt-1 font-semibold">
               {typeof contract.freelancer ===
-              "string"
+                "string"
                 ? contract.freelancer
                 : contract.freelancer.fullName}
             </p>
 
             {typeof contract.freelancer !==
               "string" && (
-              <p className="text-sm text-gray-500">
-                @{contract.freelancer.username}
-              </p>
-            )}
+                <p className="text-sm text-gray-500">
+                  @{contract.freelancer.username}
+                </p>
+              )}
           </div>
         </div>
 
@@ -302,7 +403,58 @@ export default function ContractDetailsPage() {
         )}
       </div>
 
+      {/* PRD 07 Task H: Financial History & Settlement Section */}
+      <FinancialSection
+        contractId={contract._id}
+        contractStatus={contract.status}
+        isClient={isClient}
+        isFreelancer={isFreelancer}
+        isAdmin={user?.role === "admin"}
+        amount={contract.amount}
+        paymentRecord={paymentRecord}
+        eligibility={eligibility}
+        onRefresh={() => {
+          loadFinancials();
+          loadTimeline();
+        }}
+      />
+
+      {/* PRD 06 Task G: Milestone Execution Section */}
+      {contract.executionMode === "milestone" && (
+        <MilestoneSection
+          contractId={contract._id}
+          isClient={isClient}
+          milestones={milestones}
+          onRefresh={() => {
+            loadMilestones();
+            loadTimeline();
+          }}
+        />
+      )}
+
+      {/* PRD 06 Task G: Deliverables & Reviews Section */}
+      <DeliverableSection
+        contractId={contract._id}
+        isClient={isClient}
+        isFreelancer={isFreelancer}
+        contractStatus={contract.status}
+        deliverables={deliverables}
+        milestones={milestones}
+        onRefresh={() => {
+          loadDeliverables();
+          loadMilestones();
+          loadTimeline();
+        }}
+      />
+
+      {/* PRD 06 Task G: Domain Audit Timeline */}
+      <TimelineSection
+        timeline={timeline}
+        loading={timelineLoading}
+      />
+
       <section className="mt-10">
+
         <div className="mb-5">
           <h2 className="text-2xl font-bold text-gray-900">
             Reviews

@@ -24,6 +24,13 @@ export class ProposalService {
       );
     }
 
+    if (job.client._id.toString() === freelancerId) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "You cannot apply to your own job"
+      );
+    }
+
     const existing =
       await ProposalRepository.findExisting(
         data.job,
@@ -53,6 +60,7 @@ export class ProposalService {
       title: "New Proposal Received",
       message: `A freelancer has submitted a proposal for your job "${job.title}".`,
       type: "proposal",
+      link: `/jobs/${job._id}/proposals`,
     });
 
     return proposal;
@@ -99,17 +107,20 @@ export class ProposalService {
   }
 
   static async getMyProposals(
-    freelancerId: string
+    freelancerId: string,
+    options?: any
   ) {
     return ProposalRepository.findByFreelancer(
-      freelancerId
+      freelancerId,
+      options
     );
   }
 
   static async getJobProposals(
     jobId: string,
     userId: string,
-    role: string
+    role: string,
+    options?: any
   ) {
     const job = await JobRepository.findById(jobId);
 
@@ -130,7 +141,7 @@ export class ProposalService {
       );
     }
 
-    return ProposalRepository.findByJob(jobId);
+    return ProposalRepository.findByJob(jobId, options);
   }
 
   static async updateProposal(

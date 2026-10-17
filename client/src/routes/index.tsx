@@ -27,6 +27,8 @@ import JobProposalsPage from "../pages/JobProposalsPage";
 import ContractsPage from "../pages/ContractsPage";
 import ContractDetailsPage from "../pages/ContractDetailsPage";
 import UserReviewsPage from "../pages/UserReviewsPage";
+import NotificationsPage from "../pages/NotificationsPage";
+import PaymentsPage from "../pages/PaymentsPage";
 
 import AdminRoute from "../components/common/AdminRoute";
 import AdminDashboardPage from "../pages/AdminDashboardPage";
@@ -34,6 +36,13 @@ import AdminUsersPage from "../pages/AdminUsersPage";
 import AdminJobsPage from "../pages/AdminJobsPage";
 
 import AnalyticsPage from "../pages/AnalyticsPage";
+import AdminPayoutsPage from "../pages/AdminPayoutsPage";
+import AdminDisputesPage from "../pages/AdminDisputesPage";
+import AdminSupportPage from "../pages/AdminSupportPage";
+import AdminAuditLogsPage from "../pages/AdminAuditLogsPage";
+import FreelancerDashboardPage from "../pages/FreelancerDashboardPage";
+import FreelancerWalletPage from "../pages/FreelancerWalletPage";
+import PlatformFinancePage from "../pages/PlatformFinancePage";
 
 export const router = createBrowserRouter([
   {
@@ -67,6 +76,11 @@ export const router = createBrowserRouter([
           {
             path: "/",
             element: <HomePage />,
+          },
+
+          {
+            path: "/dashboard",
+            element: <FreelancerDashboardPage />,
           },
 
           {
@@ -118,7 +132,19 @@ export const router = createBrowserRouter([
             path: "/users/:userId/reviews",
             element: <UserReviewsPage />,
           },
+          {
+            path: "/notifications",
+            element: <NotificationsPage />,
+          },
+          {
+            path: "/payments",
+            element: <PaymentsPage />,
+          },
 
+          {
+            path: "/wallet",
+            element: <FreelancerWalletPage />,
+          },
           {
             path: "/chat/:userId",
             element: <ChatRoute />,
@@ -130,20 +156,38 @@ export const router = createBrowserRouter([
       path: "/admin",
       element: <AdminDashboardPage />,
     },
-
+    {
+      path: "/admin/finance",
+      element: <PlatformFinancePage />,
+    },
     {
       path: "/admin/users",
       element: <AdminUsersPage />,
     },
-
     {
       path: "/admin/jobs",
       element: <AdminJobsPage />,
     },
     {
-  path: "/admin/analytics",
-  element: <AnalyticsPage />,
-},
+      path: "/admin/analytics",
+      element: <AnalyticsPage />,
+    },
+    {
+      path: "/admin/payouts",
+      element: <AdminPayoutsPage />,
+    },
+    {
+      path: "/admin/disputes",
+      element: <AdminDisputesPage />,
+    },
+    {
+      path: "/admin/support",
+      element: <AdminSupportPage />,
+    },
+    {
+      path: "/admin/audit",
+      element: <AdminAuditLogsPage />,
+    },
   ],
 },
         ],

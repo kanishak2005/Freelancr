@@ -26,7 +26,8 @@ export class ChatRepository {
 
   static async getConversation(
     user1: string,
-    user2: string
+    user2: string,
+    options?: { cursor?: string; limit?: number }
   ) {
     if (
       !Types.ObjectId.isValid(user1) ||
@@ -35,7 +36,8 @@ export class ChatRepository {
       return [];
     }
 
-    return Chat.find({
+    const limit = Math.min(Math.max(Number(options?.limit) || 50, 1), 100);
+    const query: any = {
       $or: [
         {
           sender: new Types.ObjectId(user1),
@@ -46,8 +48,15 @@ export class ChatRepository {
           receiver: new Types.ObjectId(user1),
         },
       ],
-    })
+    };
+
+    if (options?.cursor && Types.ObjectId.isValid(options.cursor)) {
+      query._id = { $lt: new Types.ObjectId(options.cursor) };
+    }
+
+    return Chat.find(query)
       .sort({ createdAt: 1 })
+      .limit(limit)
       .populate(
         "sender",
         "fullName username avatar"

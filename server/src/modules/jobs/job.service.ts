@@ -85,6 +85,13 @@ export class JobService {
       );
     }
 
+    if (job.status !== "open") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Cannot delete a job that is already in progress or completed"
+      );
+    }
+
     await JobRepository.delete(jobId);
 
     return {
@@ -105,28 +112,62 @@ export class JobService {
     return job;
   }
 
-  static async getAllJobs() {
-    return JobRepository.findAll();
+  static async getAllJobs(
+    options?: any,
+    userContext?: { id?: string; role?: string }
+  ) {
+    const filters = {
+      q: options?.q || options?.keyword,
+      category: options?.category,
+      budgetMin:
+        options?.budgetMin !== undefined
+          ? Number(options.budgetMin)
+          : undefined,
+      budgetMax:
+        options?.budgetMax !== undefined
+          ? Number(options.budgetMax)
+          : undefined,
+      budgetType: options?.budgetType,
+      experienceLevel: options?.experienceLevel,
+      isRemote:
+        options?.isRemote !== undefined
+          ? options.isRemote === "true" || options.isRemote === true
+          : undefined,
+      status: options?.status,
+      proposalCountMax:
+        options?.proposalCountMax !== undefined
+          ? Number(options.proposalCountMax)
+          : undefined,
+      sort: options?.sort,
+    };
+
+    return JobRepository.findWithTrustAndMatching(
+      filters,
+      options,
+      userContext
+    );
   }
 
   static async getMyJobs(
-    clientId: string
+    clientId: string,
+    options?: any
   ) {
-    return JobRepository.findByClient(clientId);
+    return JobRepository.findByClient(clientId, options);
   }
 
   static async searchJobs(
-    keyword: string
+    keyword: string,
+    options?: any
   ) {
-    const escapedKeyword = keyword.replace(
+    const escapedKeyword = (keyword || "").replace(
       /[.*+?^${}()|[\]\\]/g,
       "\\$&"
     );
 
-    return JobRepository.search(escapedKeyword);
+    return JobRepository.search(escapedKeyword, options);
   }
 
-  static async filterJobs(filters: any) {
+  static async filterJobs(filters: any, options?: any) {
     const allowedFilters: Record<string, unknown> = {};
 
     if (
@@ -171,7 +212,8 @@ export class JobService {
     }
 
     return JobRepository.filter(
-      allowedFilters
+      allowedFilters,
+      options
     );
   }
 }

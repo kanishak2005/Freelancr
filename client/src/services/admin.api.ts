@@ -18,6 +18,11 @@ export interface AdminDashboard {
     completed: number;
     cancelled: number;
   };
+
+  operations?: {
+    openDisputes: number;
+    openTickets: number;
+  };
 }
 
 export interface AdminUser {
@@ -184,3 +189,129 @@ export const deleteAdminJob = async (jobId: string) => {
 
   return response.data;
 };
+
+export const getAdminAuditLogs = async (params?: {
+  page?: number;
+  limit?: number;
+  action?: string;
+  targetType?: string;
+}) => {
+  const response = await api.get<{
+    success: boolean;
+    data: any[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }>("/admin/audit", { params });
+
+  return response.data;
+};
+
+export const getAdminHealth = async () => {
+  const response = await api.get<{
+    success: boolean;
+    data: {
+      status: string;
+      timestamp: string;
+      uptimeSeconds: number;
+      environment: string;
+      process: {
+        pid: number;
+        nodeVersion: string;
+        memoryRssMb: number;
+        memoryHeapUsedMb: number;
+        memoryHeapTotalMb: number;
+      };
+      database: {
+        status: string;
+      };
+    };
+  }>("/admin/health");
+
+  return response.data;
+};
+
+export interface GatewayDiagnostics {
+  status: string;
+  gateway: string;
+  mode: "live" | "test" | "unidentified";
+  keyIdMasked: string;
+  hasKeySecret: boolean;
+  hasWebhookSecret: boolean;
+  webhookConfigured: boolean;
+  verifiedPayments: {
+    totalOrders: number;
+    totalCaptured: number;
+    lastCapturedAt: string | null;
+    lastCapturedAmount: number;
+    currency: string;
+  };
+  capabilities: {
+    orderCreation: boolean;
+    paymentVerification: boolean;
+    webhooks: boolean;
+    directRouteTransfers: boolean;
+  };
+}
+
+export const getAdminGatewayDiagnostics = async () => {
+  const response = await api.get<{
+    success: boolean;
+    data: GatewayDiagnostics;
+  }>("/admin/gateway");
+
+  return response.data.data;
+};
+
+export interface CommissionSummary {
+  policy: {
+    name: string;
+    ratePercent: number;
+    basis: string;
+    rounding: string;
+    currency: string;
+  };
+  totals: {
+    earned: { minor: number; major: number; count: number };
+    pendingSettlement: { minor: number; major: number; count: number };
+    settledInBank: { minor: number; major: number; count: number };
+    refunded: { minor: number; major: number; count: number };
+  };
+  reconciliationStatus: {
+    honestAppraisal: string;
+    requiresDedicatedKYC: boolean;
+  };
+}
+
+export interface CommissionRecord {
+  _id: string;
+  paymentId: string;
+  contractId: string;
+  milestoneId?: string;
+  razorpayOrderId: string;
+  grossAmountMinor: number;
+  commissionAmountMinor: number;
+  ratePercent: number;
+  status: "earned" | "pending_settlement" | "settled" | "refunded";
+  currency: string;
+  recognizedAt: string;
+  settledAt?: string;
+}
+
+export const getAdminCommissionSummary = async () => {
+  const response = await api.get<{
+    success: boolean;
+    data: CommissionSummary;
+  }>("/admin/commission/summary");
+
+  return response.data.data;
+};
+
+export const getAdminCommissionLedger = async (params?: { page?: number; limit?: number }) => {
+  const response = await api.get<{
+    success: boolean;
+    data: CommissionRecord[];
+    pagination: AdminPagination;
+  }>("/admin/commission/ledger", { params });
+
+  return response.data;
+};
+
