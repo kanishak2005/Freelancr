@@ -46,3 +46,46 @@ export const payoutEligibilityValidation = [
     .isMongoId()
     .withMessage("Invalid contract ID"),
 ];
+
+export const requestCashoutValidation = [
+  body("amount")
+    .notEmpty()
+    .withMessage("Cashout amount is required")
+    .isNumeric()
+    .withMessage("Cashout amount must be a number")
+    .custom((value) => {
+      const num = Number(value);
+      if (isNaN(num) || !isFinite(num) || num <= 0) {
+        throw new Error("Cashout amount must be greater than zero");
+      }
+      if (num < 1) {
+        throw new Error("Minimum cashout amount is ₹1.00");
+      }
+      return true;
+    }),
+  body("beneficiaryNotes")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Beneficiary notes must not exceed 500 characters"),
+];
+
+export const cashoutRequestIdValidation = [
+  param("id")
+    .isMongoId()
+    .withMessage("Invalid cashout request ID"),
+];
+
+export const rejectCashoutValidation = [
+  param("id")
+    .isMongoId()
+    .withMessage("Invalid cashout request ID"),
+  body("reason")
+    .notEmpty()
+    .withMessage("Rejection reason is required")
+    .isString()
+    .trim()
+    .isLength({ min: 3, max: 500 })
+    .withMessage("Rejection reason must be between 3 and 500 characters"),
+];

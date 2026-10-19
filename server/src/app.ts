@@ -78,6 +78,7 @@ app.use(
 );
 app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/upload", uploadRoutes);
+app.use("/api/v1/uploads", uploadRoutes);
 app.use("/api/v1/notifications", notificationRoutes
 );  
 app.use("/api/v1/admin", adminRoutes);

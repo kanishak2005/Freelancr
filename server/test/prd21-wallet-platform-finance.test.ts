@@ -18,6 +18,7 @@ import { ContractRepository } from "../src/modules/contracts/contract.repository
 import { UserRepository } from "../src/modules/users/user.repository";
 import { PaymentRepository } from "../src/modules/payments/payment.repository";
 import { DisputeRepository } from "../src/modules/disputes/dispute.repository";
+import { CashoutRequest } from "../src/modules/payments/cashoutRequest.model";
 
 describe("PRD 21 — Platform Finance Dashboard and Freelancer Wallet Tests", () => {
   it("1. Wallet balance calculation and cashout validation (sufficient and insufficient)", async () => {
@@ -26,6 +27,7 @@ describe("PRD 21 — Platform Finance Dashboard and Freelancer Wallet Tests", ()
     const origFindOne = Wallet.findOne;
     const origSave = Wallet.prototype.save;
     const origLedgerCreate = FinancialLedger.create;
+    const origCashoutRequestCreate = CashoutRequest.create;
     const origAuditRecord = AuditService.record;
 
     try {
@@ -67,6 +69,13 @@ describe("PRD 21 — Platform Finance Dashboard and Freelancer Wallet Tests", ()
 
       // Test 1c: Valid cashout (₹2,000)
       (FinancialLedger as any).create = async () => [{}];
+      (CashoutRequest as any).create = async (docs: any[]) =>
+        docs.map((d) => ({
+          _id: new Types.ObjectId(),
+          ...d,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
 
       const cashoutRes = await WalletService.requestCashout(userId, 2000);
       assert.strictEqual(cashoutRes.success, true);
@@ -79,6 +88,7 @@ describe("PRD 21 — Platform Finance Dashboard and Freelancer Wallet Tests", ()
       (Wallet as any).findOne = origFindOne;
       (Wallet as any).prototype.save = origSave;
       (FinancialLedger as any).create = origLedgerCreate;
+      (CashoutRequest as any).create = origCashoutRequestCreate;
       (AuditService as any).record = origAuditRecord;
     }
   });

@@ -259,7 +259,85 @@ export class PaymentController {
 
   static async requestCashout(req: AuthRequest, res: Response) {
     const amount = Number(req.body.amount);
-    const result = await WalletService.requestCashout(req.user!.id, amount);
+    const beneficiaryNotes = req.body.beneficiaryNotes as string | undefined;
+    const result = await WalletService.requestCashout(req.user!.id, amount, beneficiaryNotes);
+    return res.status(201).json({
+      success: true,
+      message: result.message,
+      data: result,
+    });
+  }
+
+  static async getMyCashouts(req: AuthRequest, res: Response) {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const status = req.query.status as string | undefined;
+
+    const result = await WalletService.getMyCashouts(req.user!.id, {
+      page,
+      limit,
+      status,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result.requests,
+      pagination: result.pagination,
+    });
+  }
+
+  static async cancelCashout(req: AuthRequest, res: Response) {
+    const result = await WalletService.cancelCashout(
+      req.params.id as string,
+      req.user!.id
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result,
+    });
+  }
+
+  static async getAdminCashouts(req: AuthRequest, res: Response) {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+    const status = req.query.status as string | undefined;
+
+    const result = await WalletService.getAdminCashouts({
+      page,
+      limit,
+      status,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result.requests,
+      pagination: result.pagination,
+    });
+  }
+
+  static async approveCashout(req: AuthRequest, res: Response) {
+    const result = await WalletService.approveCashout(
+      req.params.id as string,
+      req.user!.id
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result,
+    });
+  }
+
+  static async rejectCashout(req: AuthRequest, res: Response) {
+    const reason = req.body.reason as string;
+    const result = await WalletService.rejectCashout(
+      req.params.id as string,
+      req.user!.id,
+      reason
+    );
+
     return res.status(200).json({
       success: true,
       message: result.message,

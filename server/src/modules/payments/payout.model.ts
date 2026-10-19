@@ -42,7 +42,6 @@ const payoutSchema = new Schema<IPayout>(
       type: Schema.Types.ObjectId,
       ref: "Contract",
       required: true,
-      index: true,
     },
     milestone: {
       type: Schema.Types.ObjectId,

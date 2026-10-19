@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getMyWallet,
+  getMyCashouts,
+  cancelCashoutRequest,
   requestWalletCashout,
+  type CashoutRequestRecord,
 } from "../services/payments.api";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -13,6 +16,7 @@ import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 export default function FreelancerWalletPage() {
   const queryClient = useQueryClient();
   const [cashoutAmount, setCashoutAmount] = useState<string>("");
+  const [beneficiaryNotes, setBeneficiaryNotes] = useState<string>("");
   const [cashoutError, setCashoutError] = useState<string>("");
   const [cashoutSuccess, setCashoutSuccess] = useState<string>("");
 
@@ -28,13 +32,25 @@ export default function FreelancerWalletPage() {
     staleTime: 30 * 1000,
   });
 
+  const {
+    data: cashoutsData,
+    isLoading: isCashoutsLoading,
+  } = useQuery({
+    queryKey: ["wallet", "my-cashouts"],
+    queryFn: () => getMyCashouts({ limit: 10 }),
+    staleTime: 30 * 1000,
+  });
+
   const cashoutMutation = useMutation({
-    mutationFn: (amount: number) => requestWalletCashout(amount),
+    mutationFn: ({ amount, notes }: { amount: number; notes?: string }) =>
+      requestWalletCashout(amount, notes),
     onSuccess: (res) => {
       setCashoutSuccess(res.message);
       setCashoutAmount("");
+      setBeneficiaryNotes("");
       setCashoutError("");
       queryClient.invalidateQueries({ queryKey: ["wallet", "my-wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet", "my-cashouts"] });
     },
     onError: (err: any) => {
       const msg =
@@ -44,11 +60,29 @@ export default function FreelancerWalletPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => cancelCashoutRequest(id),
+    onSuccess: (res) => {
+      setCashoutSuccess(res.message);
+      queryClient.invalidateQueries({ queryKey: ["wallet", "my-wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet", "my-cashouts"] });
+    },
+    onError: (err: any) => {
+      const msg =
+        err?.response?.data?.message || "Failed to cancel cashout request.";
+      setCashoutError(msg);
+    },
+  });
+
   const handleCashoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const num = parseFloat(cashoutAmount);
     if (isNaN(num) || num <= 0) {
       setCashoutError("Please enter a valid positive amount.");
+      return;
+    }
+    if (num < 1) {
+      setCashoutError("Minimum cashout request amount is ₹1.00.");
       return;
     }
     if (data && num > data.wallet.availableBalance) {
@@ -61,7 +95,7 @@ export default function FreelancerWalletPage() {
     }
     setCashoutError("");
     setCashoutSuccess("");
-    cashoutMutation.mutate(num);
+    cashoutMutation.mutate({ amount: num, notes: beneficiaryNotes });
   };
 
   const wallet = data?.wallet;
@@ -174,10 +208,10 @@ export default function FreelancerWalletPage() {
             <CardBody className="p-6">
               <div className="max-w-xl">
                 <h3 className="text-lg font-bold text-slate-900">
-                  Request Wallet Cashout
+                  Request Partial or Full Wallet Cashout
                 </h3>
                 <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                  Withdraw approved funds to your bank account. Transfers are processed by the platform administrator via verified banking rails.
+                  Request a partial balance withdrawal. Funds are atomically reserved from your available balance and reviewed in-app by platform administrators.
                 </p>
 
                 {cashoutSuccess && (
@@ -224,6 +258,21 @@ export default function FreelancerWalletPage() {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Withdrawal / Beneficiary Memo (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={500}
+                      value={beneficiaryNotes}
+                      onChange={(e) => setBeneficiaryNotes(e.target.value)}
+                      placeholder="e.g. Bank account / memo for administrator review"
+                      disabled={wallet.availableBalance <= 0 || cashoutMutation.isPending}
+                      className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 disabled:opacity-50"
+                    />
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <Button
                       type="submit"
@@ -235,13 +284,105 @@ export default function FreelancerWalletPage() {
                       Submit Cashout Request
                     </Button>
                     <span className="text-xs text-slate-400">
-                      Zero fee on in-app wallet balance deductions
+                      Zero fee on in-app balance reservations
                     </span>
                   </div>
                 </form>
               </div>
             </CardBody>
           </Card>
+
+          {/* Individual Cashout Requests Table */}
+          <div>
+            <div className="mb-4">
+              <h3 className="text-lg font-bold text-slate-900">
+                Cashout Requests & Review Status
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Track each partial cashout reservation, administrator review, or cancel pending requests to restore funds.
+              </p>
+            </div>
+
+            {isCashoutsLoading ? (
+              <LoadingSkeleton className="h-28 w-full" />
+            ) : !cashoutsData?.data || cashoutsData.data.length === 0 ? (
+              <EmptyState
+                title="No cashout requests yet"
+                description="Submitted partial requests will be tracked here individually with live review statuses."
+              />
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <thead className="bg-slate-50/75 text-xs font-semibold uppercase text-slate-500">
+                      <tr>
+                        <th className="px-5 py-3.5">Reference ID</th>
+                        <th className="px-5 py-3.5">Amount</th>
+                        <th className="px-5 py-3.5">Status</th>
+                        <th className="px-5 py-3.5">Notes / Rejection Reason</th>
+                        <th className="px-5 py-3.5">Date</th>
+                        <th className="px-5 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {cashoutsData.data.map((req: CashoutRequestRecord) => (
+                        <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-600">
+                            {req.referenceId}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-4 font-semibold text-slate-900">
+                            ₹{req.amount.toLocaleString("en-IN")}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-4">
+                            {req.status === "pending_review" && (
+                              <Badge variant="warning">Under Review</Badge>
+                            )}
+                            {req.status === "approved" && (
+                              <Badge variant="success">Approved</Badge>
+                            )}
+                            {req.status === "rejected" && (
+                              <Badge variant="danger">Rejected (Funds Restored)</Badge>
+                            )}
+                            {req.status === "cancelled" && (
+                              <Badge variant="neutral">Cancelled (Funds Restored)</Badge>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-xs text-slate-600 max-w-xs">
+                            {req.rejectionReason ? (
+                              <span className="text-rose-600 font-medium">{req.rejectionReason}</span>
+                            ) : req.beneficiaryNotes ? (
+                              <span>{req.beneficiaryNotes}</span>
+                            ) : (
+                              <span className="text-slate-400 italic">None</span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">
+                            {new Date(req.createdAt).toLocaleDateString("en-IN", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-4 text-right text-xs">
+                            {req.status === "pending_review" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                isLoading={cancelMutation.isPending}
+                                onClick={() => cancelMutation.mutate(req.id)}
+                              >
+                                Cancel & Restore
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Wallet Transaction Ledger */}
           <div>

@@ -13,6 +13,9 @@ import {
   paymentIdValidation,
   payoutIdValidation,
   payoutEligibilityValidation,
+  requestCashoutValidation,
+  cashoutRequestIdValidation,
+  rejectCashoutValidation,
 } from "./payment.validation";
 
 const router = Router();
@@ -107,7 +110,53 @@ router.post(
   authenticate,
   authorize("freelancer"),
   financialRateLimiter,
+  requestCashoutValidation,
+  validate,
   PaymentController.requestCashout
+);
+
+router.get(
+  "/wallet/cashouts/my",
+  authenticate,
+  authorize("freelancer"),
+  PaymentController.getMyCashouts
+);
+
+router.post(
+  "/wallet/cashouts/:id/cancel",
+  authenticate,
+  authorize("freelancer"),
+  financialRateLimiter,
+  cashoutRequestIdValidation,
+  validate,
+  PaymentController.cancelCashout
+);
+
+router.get(
+  "/admin/cashouts",
+  authenticate,
+  authorize("admin"),
+  PaymentController.getAdminCashouts
+);
+
+router.post(
+  "/admin/cashouts/:id/approve",
+  authenticate,
+  authorize("admin"),
+  financialRateLimiter,
+  cashoutRequestIdValidation,
+  validate,
+  PaymentController.approveCashout
+);
+
+router.post(
+  "/admin/cashouts/:id/reject",
+  authenticate,
+  authorize("admin"),
+  financialRateLimiter,
+  rejectCashoutValidation,
+  validate,
+  PaymentController.rejectCashout
 );
 
 router.get(

@@ -267,7 +267,87 @@ export const getMyWallet = async () => {
   return response.data.data;
 };
 
-export const requestWalletCashout = async (amount: number) => {
+export interface CashoutRequestRecord {
+  id: string;
+  amount: number;
+  amountMinor: number;
+  currency: string;
+  status: "pending_review" | "approved" | "rejected" | "cancelled";
+  referenceId: string;
+  user?: {
+    _id?: string;
+    fullName?: string;
+    username?: string;
+    email?: string;
+  };
+  beneficiaryNotes?: string;
+  rejectionReason?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getMyCashouts = async (params?: { page?: number; limit?: number; status?: string }) => {
+  const response = await api.get<{
+    success: boolean;
+    data: CashoutRequestRecord[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }>("/payments/wallet/cashouts/my", { params });
+
+  return response.data;
+};
+
+export const cancelCashoutRequest = async (id: string) => {
+  const response = await api.post<{
+    success: boolean;
+    message: string;
+    data: any;
+  }>(`/payments/wallet/cashouts/${id}/cancel`);
+
+  return response.data;
+};
+
+export const getAdminCashouts = async (params?: { page?: number; limit?: number; status?: string }) => {
+  const response = await api.get<{
+    success: boolean;
+    data: CashoutRequestRecord[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }>("/payments/admin/cashouts", { params });
+
+  return response.data;
+};
+
+export const approveCashoutRequest = async (id: string) => {
+  const response = await api.post<{
+    success: boolean;
+    message: string;
+    data: any;
+  }>(`/payments/admin/cashouts/${id}/approve`);
+
+  return response.data;
+};
+
+export const rejectCashoutRequest = async (id: string, reason: string) => {
+  const response = await api.post<{
+    success: boolean;
+    message: string;
+    data: any;
+  }>(`/payments/admin/cashouts/${id}/reject`, { reason });
+
+  return response.data;
+};
+
+export const requestWalletCashout = async (amount: number, beneficiaryNotes?: string) => {
   const response = await api.post<{
     success: boolean;
     message: string;
@@ -277,7 +357,7 @@ export const requestWalletCashout = async (amount: number) => {
       availableBalance: number;
       reservedCashout: number;
     };
-  }>("/payments/wallet/cashout", { amount });
+  }>("/payments/wallet/cashout", { amount, beneficiaryNotes });
 
   return response.data;
 };
