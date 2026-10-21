@@ -130,3 +130,20 @@ export const resetPassword = async (
 
   return response.data;
 };
+
+export const googleAuthUser = async (payload: {
+  credential: string;
+  role?: "client" | "freelancer";
+}) => {
+  const response = await api.post<AuthResponse>("/auth/google", payload);
+
+  const data = response.data;
+
+  return {
+    ...data,
+    data: {
+      ...data.data,
+      user: data.data.user ? normalizeUser(data.data.user) : undefined,
+    },
+  };
+};

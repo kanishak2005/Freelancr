@@ -17,6 +17,9 @@ export interface IUser {
   isVerified: boolean;
   isActive: boolean;
 
+  googleId?: string;
+  authProvider?: "local" | "google";
+
   refreshToken?: string;
 
   createdAt?: Date;

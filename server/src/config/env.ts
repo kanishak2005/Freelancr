@@ -73,4 +73,8 @@ export const env = {
 
   MAIL_FROM:
     process.env.MAIL_FROM || "",
+
+  get GOOGLE_CLIENT_ID(): string {
+    return process.env.GOOGLE_CLIENT_ID || "";
+  },
 };

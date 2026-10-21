@@ -59,3 +59,16 @@ export const loginValidation = [
   body("password")
     .notEmpty(),
 ];
+
+export const googleAuthValidation = [
+  body("credential")
+    .notEmpty()
+    .withMessage("Google credential is required")
+    .isString()
+    .withMessage("Google credential must be a valid token string"),
+
+  body("role")
+    .optional()
+    .isIn(["client", "freelancer"])
+    .withMessage("Role must be client or freelancer"),
+];

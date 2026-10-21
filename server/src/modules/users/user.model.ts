@@ -90,6 +90,17 @@ portfolio: [
       type: Boolean,
       default: true,
     },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      select: false,
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
     passwordResetToken: {
     type: String,
     default: "",

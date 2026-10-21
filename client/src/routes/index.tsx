@@ -1,12 +1,8 @@
-import {
-  createBrowserRouter,
-  useParams,
-} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
 
 import HomePage from "../pages/HomePage";
-import ChatPage from "../pages/ChatPage";
 import JobsPage from "../pages/JobsPage";
 import JobDetailsPage from "../pages/JobDetailsPage";
 import CreateJobPage from "../pages/CreateJobPage";
@@ -44,90 +40,82 @@ import FreelancerDashboardPage from "../pages/FreelancerDashboardPage";
 import FreelancerWalletPage from "../pages/FreelancerWalletPage";
 import PlatformFinancePage from "../pages/PlatformFinancePage";
 
+import ChatRoute from "./ChatRoute";
+
 export const router = createBrowserRouter([
+  // Public Homepage & Landing Experience
+  {
+    path: "/",
+    element: <HomePage />,
+  },
+
+  // Public Discovery Routes (accessible without sign-in, with optional authentication)
+  {
+    path: "/jobs",
+    element: <JobsPage />,
+  },
+  {
+    path: "/jobs/:id",
+    element: <JobDetailsPage />,
+  },
+
+  // Authentication Flows
   {
     path: "/login",
     element: <LoginPage />,
   },
-
   {
     path: "/register",
     element: <RegisterPage />,
   },
-
   {
     path: "/forgot-password",
     element: <ForgotPasswordPage />,
   },
-
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
   },
 
+  // Protected Routes (enforces session / token check)
   {
     element: <ProtectedRoute />,
-
     children: [
       {
         element: <MainLayout />,
-
         children: [
-          {
-            path: "/",
-            element: <HomePage />,
-          },
-
           {
             path: "/dashboard",
             element: <FreelancerDashboardPage />,
           },
-
-          {
-            path: "/jobs",
-            element: <JobsPage />,
-          },
-
           {
             path: "/jobs/create",
             element: <CreateJobPage />,
           },
-
-          {
-            path: "/jobs/:id",
-            element: <JobDetailsPage />,
-          },
-
           {
             path: "/my-jobs",
             element: <MyJobsPage />,
           },
-
           {
             path: "/my-proposals",
             element: <MyProposalsPage />,
           },
-
           {
             path: "/proposals/:id",
             element: <ProposalDetailsPage />,
           },
-
           {
             path: "/jobs/:id/proposals",
             element: <JobProposalsPage />,
           },
-
           {
             path: "/contracts",
             element: <ContractsPage />,
           },
-
           {
             path: "/contracts/:id",
             element: <ContractDetailsPage />,
           },
-
           {
             path: "/users/:userId/reviews",
             element: <UserReviewsPage />,
@@ -140,7 +128,6 @@ export const router = createBrowserRouter([
             path: "/payments",
             element: <PaymentsPage />,
           },
-
           {
             path: "/wallet",
             element: <FreelancerWalletPage />,
@@ -150,66 +137,54 @@ export const router = createBrowserRouter([
             element: <ChatRoute />,
           },
           {
-  element: <AdminRoute />,
-  children: [
-    {
-      path: "/admin",
-      element: <AdminDashboardPage />,
-    },
-    {
-      path: "/admin/finance",
-      element: <PlatformFinancePage />,
-    },
-    {
-      path: "/admin/users",
-      element: <AdminUsersPage />,
-    },
-    {
-      path: "/admin/jobs",
-      element: <AdminJobsPage />,
-    },
-    {
-      path: "/admin/analytics",
-      element: <AnalyticsPage />,
-    },
-    {
-      path: "/admin/payouts",
-      element: <AdminPayoutsPage />,
-    },
-    {
-      path: "/admin/disputes",
-      element: <AdminDisputesPage />,
-    },
-    {
-      path: "/admin/support",
-      element: <AdminSupportPage />,
-    },
-    {
-      path: "/admin/audit",
-      element: <AdminAuditLogsPage />,
-    },
-  ],
-},
+            element: <AdminRoute />,
+            children: [
+              {
+                path: "/admin",
+                element: <AdminDashboardPage />,
+              },
+              {
+                path: "/admin/finance",
+                element: <PlatformFinancePage />,
+              },
+              {
+                path: "/admin/users",
+                element: <AdminUsersPage />,
+              },
+              {
+                path: "/admin/jobs",
+                element: <AdminJobsPage />,
+              },
+              {
+                path: "/admin/analytics",
+                element: <AnalyticsPage />,
+              },
+              {
+                path: "/admin/payouts",
+                element: <AdminPayoutsPage />,
+              },
+              {
+                path: "/admin/disputes",
+                element: <AdminDisputesPage />,
+              },
+              {
+                path: "/admin/support",
+                element: <AdminSupportPage />,
+              },
+              {
+                path: "/admin/audit",
+                element: <AdminAuditLogsPage />,
+              },
+            ],
+          },
         ],
       },
     ],
   },
 
+  // 404 Catch-All
   {
     path: "*",
     element: <NotFoundPage />,
   },
 ]);
-
-function ChatRoute() {
-  const { userId } =
-    useParams<{
-      userId: string;
-    }>();
-
-  if (!userId) {
-    return <NotFoundPage />;
-  }
-
-  return <ChatPage userId={userId} />;
-}

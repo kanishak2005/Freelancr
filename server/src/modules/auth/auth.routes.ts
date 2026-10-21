@@ -4,6 +4,7 @@ import { AuthController } from "./auth.controller";
 import {
   registerValidation,
   loginValidation,
+  googleAuthValidation,
   changePasswordValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
@@ -33,6 +34,14 @@ router.post(
   loginValidation,
   validate,
   AuthController.login
+);
+
+router.post(
+  "/google",
+  authRateLimiter,
+  googleAuthValidation,
+  validate,
+  AuthController.googleAuth
 );
 
 router.get(

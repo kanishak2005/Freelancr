@@ -14,6 +14,18 @@ export class UserRepository {
     return User.findOne({ email });
   }
 
+  static async findByGoogleId(googleId: string) {
+    return User.findOne({ googleId }).select("+googleId +refreshToken");
+  }
+
+  static async linkGoogleId(userId: string, googleId: string) {
+    return User.findByIdAndUpdate(
+      userId,
+      { googleId, authProvider: "google" },
+      { new: true }
+    );
+  }
+
   static async findByEmailWithPassword(email: string) {
     return User.findOne({ email }).select("+password +refreshToken");
   }

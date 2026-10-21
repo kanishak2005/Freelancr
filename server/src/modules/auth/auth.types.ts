@@ -9,3 +9,8 @@ export interface LoginUserDto {
   email: string;
   password: string;
 }
+
+export interface GoogleAuthDto {
+  credential: string;
+  role?: "client" | "freelancer";
+}

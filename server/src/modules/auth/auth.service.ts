@@ -284,4 +284,146 @@ static async resetPassword(
     message: "Password reset successful. Please login again.",
   };
 }
+
+  static async googleAuth(data: { credential: string; role?: "client" | "freelancer" }) {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || (await import("../../config/env.js")).env.GOOGLE_CLIENT_ID;
+
+  if (!googleClientId) {
+    throw new ApiError(
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      "Google authentication is not configured on the server"
+    );
+  }
+
+  // Server-side verification using official google-auth-library
+  const { OAuth2Client } = await import("google-auth-library");
+  const client = new OAuth2Client(googleClientId);
+
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({
+      idToken: data.credential,
+      audience: googleClientId,
+    });
+  } catch {
+    throw new ApiError(
+      HTTP_STATUS.UNAUTHORIZED,
+      "Invalid or expired Google credential"
+    );
+  }
+
+  const payload = ticket.getPayload();
+  if (!payload) {
+    throw new ApiError(
+      HTTP_STATUS.UNAUTHORIZED,
+      "Google token payload could not be verified"
+    );
+  }
+
+  const { sub: googleId, email, email_verified, name, picture } = payload;
+
+  if (!googleId) {
+    throw new ApiError(
+      HTTP_STATUS.UNAUTHORIZED,
+      "Google credential missing unique subject identity"
+    );
+  }
+
+  if (!email || !email_verified) {
+    throw new ApiError(
+      HTTP_STATUS.BAD_REQUEST,
+      "A verified email address is required from Google"
+    );
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 1. Check if user already exists with this googleId
+  let existingUser = await UserRepository.findByGoogleId(googleId);
+
+  if (existingUser) {
+    if (!existingUser.isActive) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "Your account has been deactivated"
+      );
+    }
+  } else {
+    // 2. Check if user exists with this email
+    const userByEmail = await UserRepository.findByEmail(normalizedEmail);
+
+    if (userByEmail) {
+      // Account collision: user has an existing account created via password or other means
+      // Require explicit password login or safe linking rather than silent auto-merge
+      if (!userByEmail.googleId) {
+        throw new ApiError(
+          HTTP_STATUS.CONFLICT,
+          "An account with this email already exists using password authentication. Please sign in with your email and password to link your accounts."
+        );
+      } else if (userByEmail.googleId !== googleId) {
+        throw new ApiError(
+          HTTP_STATUS.CONFLICT,
+          "This email is associated with a different Google account."
+        );
+      }
+    }
+
+    // 3. New Google Registration
+    const randomPassword =
+      Math.random().toString(36).slice(-10) +
+      Math.random().toString(36).slice(-10) +
+      "Aa1!";
+    const hashedPassword = await hashPassword(randomPassword);
+
+    const usernameBase =
+      normalizedEmail.split("@")[0].replace(/[^a-zA-Z0-9]/g, "") || "user";
+    const username = `${usernameBase}${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const chosenRole: "client" | "freelancer" =
+      data.role === "client" || data.role === "freelancer"
+        ? data.role
+        : "freelancer";
+
+    const createdUser = await UserRepository.create({
+      fullName: name || usernameBase,
+      username,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: chosenRole,
+      avatar: picture || "",
+      bio: "",
+      phone: "",
+      location: "",
+      skills: [],
+      googleId,
+      authProvider: "google",
+      isVerified: true, // Email verified by Google
+      isActive: true,
+    });
+
+    existingUser = createdUser;
+  }
+
+  const accessToken = generateAccessToken({
+    id: existingUser._id,
+    role: existingUser.role,
+  });
+
+  const refreshToken = generateRefreshToken({
+    id: existingUser._id,
+  });
+
+  await UserRepository.updateRefreshToken(
+    existingUser._id.toString(),
+    refreshToken
+  );
+
+  const user = await UserRepository.findById(existingUser._id.toString());
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+  };
+}
 }

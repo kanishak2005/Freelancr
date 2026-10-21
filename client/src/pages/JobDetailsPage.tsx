@@ -249,6 +249,28 @@ export default function JobDetailsPage() {
               </button>
             )}
 
+            {job.status === "open" && !user && (
+              <div className="mt-6 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-center">
+                <p className="text-xs font-semibold text-indigo-950 mb-3">
+                  Sign in as a freelancer to submit a proposal for this project.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Link
+                    to="/login"
+                    className="w-full inline-block rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition"
+                  >
+                    Sign in to Apply
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="w-full inline-block rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    Create an Account
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {job.status !== "open" && (
               <p className="mt-6 rounded-lg bg-gray-100 p-3 text-center text-sm text-gray-500">
                 This job is no longer accepting proposals.
