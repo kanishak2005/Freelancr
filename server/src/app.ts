@@ -62,6 +62,67 @@ app.use(
 app.use(cookieParser());
 app.use(mongoSanitize);
 
+// Ensure MongoDB is connected when Vercel invokes app.ts directly.
+let mongoConnectionPromise: ReturnType<typeof mongoose.connect> | null = null;
+
+const ensureFreelancrDatabaseConnection = async (): Promise<void> => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (mongoConnectionPromise) {
+    await mongoConnectionPromise;
+    return;
+  }
+
+  if (mongoose.connection.readyState === 2) {
+    await mongoose.connection.asPromise();
+    return;
+  }
+
+  const attempt = mongoose.connect(env.MONGODB_URI);
+  mongoConnectionPromise = attempt;
+
+  try {
+    await attempt;
+  } finally {
+    if (mongoConnectionPromise === attempt) {
+      mongoConnectionPromise = null;
+    }
+  }
+};
+
+const databaseExemptPaths = new Set([
+  "/",
+  "/api/v1/health",
+  "/health/live",
+  "/health/ready",
+]);
+
+app.use(async (req, _res, next) => {
+  if (
+    req.method === "OPTIONS" ||
+    databaseExemptPaths.has(req.path)
+  ) {
+    return next();
+  }
+
+  try {
+    await ensureFreelancrDatabaseConnection();
+    return next();
+  } catch (error) {
+    console.error(
+      "[Freelancr] MongoDB connection failed before API request",
+      {
+        method: req.method,
+        path: req.path,
+        error,
+      }
+    );
+
+    return next(error);
+  }
+});
 // Routes MUST come after express.json()
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
