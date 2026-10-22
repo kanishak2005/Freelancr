@@ -118,6 +118,35 @@ passwordResetExpires: {
       select: false,
       default: "",
     },
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["basic", "plus", "pro"],
+        default: null,
+      },
+      status: {
+        type: String,
+        enum: ["active", "inactive", "past_due"],
+        default: "inactive",
+      },
+      periodId: {
+        type: String,
+        default: null,
+      },
+      currentPeriodStart: {
+        type: Date,
+        default: null,
+      },
+      currentPeriodEnd: {
+        type: Date,
+        default: null,
+      },
+      proposalsUsedThisPeriod: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+    },
   },
   {
     timestamps: true,

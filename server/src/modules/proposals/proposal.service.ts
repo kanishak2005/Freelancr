@@ -2,9 +2,11 @@ import { ProposalRepository } from "./proposal.repository";
 import { JobRepository } from "../jobs/job.repository";
 import { UserRepository } from "../users/user.repository";
 import { UserService } from "../users/user.service";
+import { SubscriptionService } from "../subscriptions/subscription.service";
 import { ContactDetector } from "../../utils/contactDetector";
 import { ApiError, HTTP_STATUS } from "../../shared";
 import { NotificationService } from "../notifications/notification.service";
+import { runInTransaction } from "../../database/transaction";
 
 export class ProposalService {
   static async apply(
@@ -34,6 +36,15 @@ export class ProposalService {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
         screening.reason || "Prohibited contact information detected. Off-platform contact exchange is not permitted."
+      );
+    }
+
+    // 3. Enforce freelancer subscription entitlement and quota gates
+    const entitlement = SubscriptionService.verifyProposalEntitlement(user.subscription);
+    if (!entitlement.isEligible) {
+      throw new ApiError(
+        entitlement.statusCode || HTTP_STATUS.FORBIDDEN,
+        entitlement.reason || "Active paid freelancer subscription required to submit proposals."
       );
     }
 
@@ -73,15 +84,51 @@ export class ProposalService {
       );
     }
 
-    const proposal =
-      await ProposalRepository.create({
-        job: job._id,
-        freelancer: freelancerId as any,
-        coverLetter: data.coverLetter,
-        bidAmount: data.bidAmount,
-        deliveryTime: data.deliveryTime,
-        attachments: data.attachments || [],
-      });
+    // 4. Atomically coordinate quota reservation and proposal persistence in one transaction
+    const proposal = await runInTransaction(async (session) => {
+      // For capped tiers (basic, plus): conditionally reserve one proposal quota unit
+      if (entitlement.quotaLimit !== null) {
+        const reservedUser = await UserRepository.reserveProposalQuotaWithSession(
+          freelancerId,
+          entitlement.plan!,
+          entitlement.periodId!,
+          entitlement.periodStart!,
+          entitlement.quotaLimit!,
+          session
+        );
+
+        if (!reservedUser) {
+          throw new ApiError(
+            HTTP_STATUS.FORBIDDEN,
+            `Monthly proposal quota reached for your plan (${entitlement.quotaLimit} proposals per period). Upgrade plan for more quota.`
+          );
+        }
+      } else {
+        // Pro plan: non-blocking telemetry count within session
+        try {
+          await UserRepository.recordProUsageTelemetryWithSession(
+            freelancerId,
+            entitlement.periodId!,
+            session
+          );
+        } catch {
+          // Non-essential telemetry failure must never block proposal creation for Pro
+        }
+      }
+
+      // Persist the proposal bound to the same session
+      return ProposalRepository.create(
+        {
+          job: job._id,
+          freelancer: freelancerId as any,
+          coverLetter: data.coverLetter,
+          bidAmount: data.bidAmount,
+          deliveryTime: data.deliveryTime,
+          attachments: data.attachments || [],
+        },
+        session
+      );
+    });
 
     await NotificationService.createNotification({
       recipient: job.client._id,

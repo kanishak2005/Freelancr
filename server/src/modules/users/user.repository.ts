@@ -217,5 +217,55 @@ export class UserRepository {
       }
     );
   }
+
+  static async reserveProposalQuotaWithSession(
+    userId: string,
+    plan: string,
+    periodId: string,
+    periodStart: Date,
+    limit: number,
+    session?: import("mongoose").ClientSession
+  ) {
+    const filter: Record<string, unknown> = {
+      _id: userId,
+      "subscription.plan": plan,
+      "subscription.status": "active",
+      "subscription.periodId": periodId,
+      "subscription.currentPeriodStart": periodStart,
+      "subscription.currentPeriodEnd": { $gt: new Date() },
+      "subscription.proposalsUsedThisPeriod": { $lt: limit },
+    };
+
+    const update = {
+      $inc: { "subscription.proposalsUsedThisPeriod": 1 },
+    };
+
+    return User.findOneAndUpdate(filter, update, {
+      new: true,
+      session: session || undefined,
+    });
+  }
+
+  static async recordProUsageTelemetryWithSession(
+    userId: string,
+    periodId: string,
+    session?: import("mongoose").ClientSession
+  ) {
+    return User.findOneAndUpdate(
+      {
+        _id: userId,
+        "subscription.plan": "pro",
+        "subscription.status": "active",
+        "subscription.periodId": periodId,
+      },
+      {
+        $inc: { "subscription.proposalsUsedThisPeriod": 1 },
+      },
+      {
+        new: true,
+        session: session || undefined,
+      }
+    );
+  }
 }
 

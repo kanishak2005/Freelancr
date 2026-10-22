@@ -26,14 +26,16 @@ export interface IUser {
   updatedAt?: Date;
   passwordResetToken?: string;
 
-passwordResetExpires?: Date;
-resume?: string;
+  passwordResetExpires?: Date;
+  resume?: string;
 
-resumePublicId?: string;
+  resumePublicId?: string;
 
-portfolio?: {
-  title: string;
-  image: string;
-  publicId: string;
-}[];
+  portfolio?: {
+    title: string;
+    image: string;
+    publicId: string;
+  }[];
+
+  subscription?: import("../subscriptions/subscription.types").ISubscription;
 }

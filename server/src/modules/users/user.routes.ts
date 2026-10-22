@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { UserController } from "./user.controller";
 import { authenticate } from "../../middleware/auth.middleware";
+import { authorize } from "../../middleware/authorize.middleware";
 import { validate } from "../../middleware/validate.middleware";
 import { updateProfileValidation } from "./user.validation";
 import { upload, resumeUpload } from "../uploads/multer";
@@ -11,6 +12,13 @@ router.get(
   "/profile",
   authenticate,
   UserController.getProfile
+);
+
+router.get(
+  "/subscription",
+  authenticate,
+  authorize("freelancer"),
+  UserController.getMySubscription
 );
 
 router.patch(

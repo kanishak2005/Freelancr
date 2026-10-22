@@ -96,6 +96,14 @@ describe("PRD 02 — Proposal Application Integrity & Profile Gate Suite", () =>
     phone: "+49 170 1234567",
     email: "alice@secret.com",
     username: "alice_dev",
+    subscription: {
+      plan: "basic",
+      status: "active",
+      periodId: "prd02_test_period_001",
+      currentPeriodStart: new Date(Date.now() - 86400000),
+      currentPeriodEnd: new Date(Date.now() + 86400000 * 30),
+      proposalsUsedThisPeriod: 0,
+    },
   });
 
   // Incomplete profile (missing bio >= 50 and skills)
@@ -116,6 +124,14 @@ describe("PRD 02 — Proposal Application Integrity & Profile Gate Suite", () =>
   const origFindById = UserRepository.findById;
   (UserRepository as any).findById = async (id: string) => {
     return mockUsers.get(id) || null;
+  };
+
+  const origReserveProposalQuota = UserRepository.reserveProposalQuotaWithSession;
+  (UserRepository as any).reserveProposalQuotaWithSession = async (id: string) => {
+    const user = mockUsers.get(id);
+    if (!user || !user.subscription) return null;
+    user.subscription.proposalsUsedThisPeriod = (user.subscription.proposalsUsedThisPeriod || 0) + 1;
+    return user;
   };
 
   // Mock JobRepository.findById
@@ -590,6 +606,7 @@ describe("PRD 02 — Proposal Application Integrity & Profile Gate Suite", () =>
     ProposalRepository.findExisting = origFindExisting;
     ProposalRepository.create = origCreate;
     NotificationService.createNotification = origNotificationCreate;
+    UserRepository.reserveProposalQuotaWithSession = origReserveProposalQuota;
 
     // Only close if this test run initiated the connection through app middleware
     if (!wasAlreadyConnected && mongoose.connection && mongoose.connection.readyState !== 0) {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { UserService } from "./user.service";
+import { SubscriptionService } from "../subscriptions/subscription.service";
 
 export class UserController {
   static async getProfile(
@@ -14,6 +15,24 @@ export class UserController {
     return res.status(200).json({
       success: true,
       data: user,
+    });
+  }
+
+  static async getMySubscription(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const user = await UserService.getProfile(
+      req.user!.id
+    );
+
+    const subscriptionDTO = SubscriptionService.getSubscriptionStatusDTO(
+      user?.subscription
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: subscriptionDTO,
     });
   }
 

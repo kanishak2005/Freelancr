@@ -16,7 +16,11 @@ const jobPopulate = {
 };
 
 export class ProposalRepository {
-  static async create(data: Partial<IProposal>) {
+  static async create(data: Partial<IProposal>, session?: import("mongoose").ClientSession) {
+    if (session) {
+      const created = await Proposal.create([data], { session });
+      return created[0];
+    }
     return Proposal.create(data);
   }
 
