@@ -1,5 +1,8 @@
 import { ProposalRepository } from "./proposal.repository";
 import { JobRepository } from "../jobs/job.repository";
+import { UserRepository } from "../users/user.repository";
+import { UserService } from "../users/user.service";
+import { ContactDetector } from "../../utils/contactDetector";
 import { ApiError, HTTP_STATUS } from "../../shared";
 import { NotificationService } from "../notifications/notification.service";
 
@@ -8,6 +11,32 @@ export class ProposalService {
     freelancerId: string,
     data: any
   ) {
+    // 1. Enforce freelancer profile completion gate server-side
+    const user = await UserRepository.findById(freelancerId);
+    if (!user) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Freelancer account not found");
+    }
+
+    const profileStatus = UserService.checkProfileCompletion(user);
+    if (!profileStatus.isComplete) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        `Profile incomplete. Please complete your profile (${profileStatus.missingFields.join(", ")}) before submitting proposals.`
+      );
+    }
+
+    // 2. Screen proposal content and attachments for prohibited contact exchange
+    const screening = ContactDetector.screenProposalContent(
+      data.coverLetter,
+      data.attachments
+    );
+    if (screening.hasContactInfo) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        screening.reason || "Prohibited contact information detected. Off-platform contact exchange is not permitted."
+      );
+    }
+
     const job = await JobRepository.findById(data.job);
 
     if (!job) {
@@ -196,6 +225,23 @@ export class ProposalService {
     if (data.attachments !== undefined) {
       updateData.attachments =
         data.attachments;
+    }
+
+    // Screen effective proposal content after applying partial update
+    const effectiveCoverLetter =
+      data.coverLetter !== undefined ? data.coverLetter : proposal.coverLetter;
+    const effectiveAttachments =
+      data.attachments !== undefined ? data.attachments : proposal.attachments;
+
+    const screening = ContactDetector.screenProposalContent(
+      effectiveCoverLetter,
+      effectiveAttachments
+    );
+    if (screening.hasContactInfo) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        screening.reason || "Prohibited contact information detected. Off-platform contact exchange is not permitted."
+      );
     }
 
     return ProposalRepository.update(

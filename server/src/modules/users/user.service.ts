@@ -301,5 +301,46 @@ export class UserService {
       publicId
     );
   }
+
+  /**
+   * Evaluates persisted freelancer profile completion against PRD 02 criteria:
+   * - fullName: trimmed string of at least 3 characters
+   * - bio: trimmed string of at least 50 characters
+   * - location: trimmed string of at least 2 characters
+   * - skills: array containing at least one non-empty skill string
+   */
+  static checkProfileCompletion(user: any): {
+    isComplete: boolean;
+    missingFields: string[];
+  } {
+    const missingFields: string[] = [];
+
+    const fullName = typeof user?.fullName === "string" ? user.fullName.trim() : "";
+    if (fullName.length < 3) {
+      missingFields.push("fullName");
+    }
+
+    const bio = typeof user?.bio === "string" ? user.bio.trim() : "";
+    if (bio.length < 50) {
+      missingFields.push("bio");
+    }
+
+    const location = typeof user?.location === "string" ? user.location.trim() : "";
+    if (location.length < 2) {
+      missingFields.push("location");
+    }
+
+    const skills = Array.isArray(user?.skills)
+      ? user.skills.filter((s: any) => typeof s === "string" && s.trim().length > 0)
+      : [];
+    if (skills.length < 1) {
+      missingFields.push("skills");
+    }
+
+    return {
+      isComplete: missingFields.length === 0,
+      missingFields,
+    };
+  }
 }
 

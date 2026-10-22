@@ -19,9 +19,9 @@ export class UserRepository {
   }
 
   static async linkGoogleId(userId: string, googleId: string) {
-    return User.findByIdAndUpdate(
-      userId,
-      { googleId, authProvider: "google" },
+    return User.findOneAndUpdate(
+      { _id: userId, $or: [{ googleId: { $exists: false } }, { googleId: null }, { googleId: "" }] },
+      { $set: { googleId } },
       { new: true }
     );
   }
@@ -32,7 +32,7 @@ export class UserRepository {
 
   static async findByUsername(username: string) {
     return User.findOne({ username }).select(
-      "fullName username role avatar bio location skills resume portfolio isVerified createdAt updatedAt"
+      "fullName username role avatar bio location skills portfolio.title portfolio.image isVerified createdAt updatedAt"
     );
   }
 
@@ -145,7 +145,7 @@ export class UserRepository {
     const [users, total] = await Promise.all([
       User.find(filter)
         .select(
-          "fullName username role avatar bio location skills resume portfolio isVerified createdAt updatedAt"
+          "fullName username role avatar bio location skills portfolio.title portfolio.image isVerified createdAt updatedAt"
         )
         .sort({
           createdAt: -1,

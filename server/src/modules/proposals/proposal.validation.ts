@@ -1,4 +1,5 @@
 import { body, param } from "express-validator";
+import { ContactDetector } from "../../utils/contactDetector";
 
 export const proposalIdValidation = [
   param("id")
@@ -22,7 +23,16 @@ export const applyProposalValidation = [
     .isLength({ min: 20 })
     .withMessage(
       "Cover letter must be at least 20 characters"
-    ),
+    )
+    .custom((value) => {
+      const detection = ContactDetector.screenText(value);
+      if (detection.hasContactInfo) {
+        throw new Error(
+          detection.reason || "Prohibited contact information detected in cover letter"
+        );
+      }
+      return true;
+    }),
 
   body("bidAmount")
     .isNumeric()
@@ -39,7 +49,20 @@ export const applyProposalValidation = [
   body("attachments")
     .optional()
     .isArray()
-    .withMessage("Attachments must be an array"),
+    .withMessage("Attachments must be an array")
+    .custom((urls: any[]) => {
+      for (const url of urls) {
+        if (typeof url === "string") {
+          const detection = ContactDetector.screenText(url);
+          if (detection.hasContactInfo) {
+            throw new Error(
+              `Attachment link contains prohibited contact info (${detection.categories.join(", ")})`
+            );
+          }
+        }
+      }
+      return true;
+    }),
 
   body("attachments.*")
     .optional()
@@ -54,7 +77,16 @@ export const updateProposalValidation = [
     .isLength({ min: 20 })
     .withMessage(
       "Cover letter must be at least 20 characters"
-    ),
+    )
+    .custom((value) => {
+      const detection = ContactDetector.screenText(value);
+      if (detection.hasContactInfo) {
+        throw new Error(
+          detection.reason || "Prohibited contact information detected in cover letter"
+        );
+      }
+      return true;
+    }),
 
   body("bidAmount")
     .optional()
@@ -73,7 +105,20 @@ export const updateProposalValidation = [
   body("attachments")
     .optional()
     .isArray()
-    .withMessage("Attachments must be an array"),
+    .withMessage("Attachments must be an array")
+    .custom((urls: any[]) => {
+      for (const url of urls) {
+        if (typeof url === "string") {
+          const detection = ContactDetector.screenText(url);
+          if (detection.hasContactInfo) {
+            throw new Error(
+              `Attachment link contains prohibited contact info (${detection.categories.join(", ")})`
+            );
+          }
+        }
+      }
+      return true;
+    }),
 
   body("attachments.*")
     .optional()
