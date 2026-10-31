@@ -11,6 +11,17 @@ jobs:
     name: Lint, Test & Build Validation
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     strategy:
       matrix:
         node-version: [20.x, 22.x]
@@ -46,24 +57,72 @@ jobs:
 
       - name: Run Server PRD 06 Regression Suite
         working-directory: server
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/freelancr_ci_test
+          JWT_ACCESS_SECRET: ci_test_jwt_access_secret_for_mocked_tests_32chars
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_for_mocked_tests_32chars
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_test_razorpay_secret
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret
         run: npx tsx --test test/prd06-*.test.ts
 
       - name: Run Server PRD 07 Payments & Payouts Suite
         working-directory: server
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/freelancr_ci_test
+          JWT_ACCESS_SECRET: ci_test_jwt_access_secret_for_mocked_tests_32chars
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_for_mocked_tests_32chars
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_test_razorpay_secret
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret
         run: npx tsx --test test/prd07-payments-payouts-refunds.test.ts
 
       - name: Run Server PRD 08 Chat, Uploads & Notifications Suite
         working-directory: server
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/freelancr_ci_test
+          JWT_ACCESS_SECRET: ci_test_jwt_access_secret_for_mocked_tests_32chars
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_for_mocked_tests_32chars
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_test_razorpay_secret
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret
         run: npx tsx --test test/prd08-chat-notifications-uploads.test.ts
 
       - name: Run Server PRD 09 Admin, Support & Disputes Suite
         working-directory: server
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/freelancr_ci_test
+          JWT_ACCESS_SECRET: ci_test_jwt_access_secret_for_mocked_tests_32chars
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_for_mocked_tests_32chars
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_test_razorpay_secret
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret
         run: npx tsx --test test/prd09-admin-support-disputes-health.test.ts
 
       - name: Run Server PRD 10 API Standardization Suite
         working-directory: server
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/freelancr_ci_test
+          JWT_ACCESS_SECRET: ci_test_jwt_access_secret_for_mocked_tests_32chars
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_for_mocked_tests_32chars
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_test_razorpay_secret
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret
         run: npx tsx --test test/prd10-api-migrations-integrity.test.ts
 
       - name: Run Server PRD 11 Observability & Health Suite
         working-directory: server
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/freelancr_ci_test
+          JWT_ACCESS_SECRET: ci_test_jwt_access_secret_for_mocked_tests_32chars
+          JWT_REFRESH_SECRET: ci_test_jwt_refresh_secret_for_mocked_tests_32chars
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_test_razorpay_secret
+          RAZORPAY_WEBHOOK_SECRET: ci_test_razorpay_webhook_secret
         run: npx tsx --test test/prd11-observability-deployment.test.ts
