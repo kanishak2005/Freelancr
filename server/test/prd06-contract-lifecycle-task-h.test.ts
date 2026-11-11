@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import mongoose, { Types } from "mongoose";
@@ -336,4 +336,10 @@ describe("PRD 06 Task H — End-to-End Contract Execution Lifecycle Acceptance T
       JobRepository.updateStatus = origJobUpdateStatus;
     }
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

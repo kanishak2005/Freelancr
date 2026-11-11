@@ -938,3 +938,9 @@ describe("PRD 06 Task E — Deliverable Approval & Change-Request Workflows", ()
     }
   });
 });
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
+});

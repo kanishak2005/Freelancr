@@ -19,6 +19,41 @@ export class EmailService {
     });
   }
 
+  static async sendRegistrationOtpEmail(
+    to: string,
+    otp: string
+  ) {
+    const subject = "Your Freelancr Verification Code";
+
+    const text = `
+Welcome to Freelancr!
+
+Your verification code is: ${otp}
+
+This code will expire in 10 minutes. If you did not request this code, you can safely ignore this email.
+`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Freelancr Verification Code</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <h2>Verify Your Freelancr Account</h2>
+  <p>Thank you for joining Freelancr. Please use the following one-time code to complete your registration:</p>
+  <div style="margin: 24px 0; padding: 16px; background: #f4f4f4; border-radius: 6px; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; color: #000;">
+    ${otp}
+  </div>
+  <p>This code expires in 10 minutes. Do not share this code with anyone.</p>
+  <p>If you did not attempt to sign up for Freelancr, please disregard this email.</p>
+</body>
+</html>
+`;
+
+    return this.sendEmail(to, subject, html, text);
+  }
 
   static async sendPasswordResetEmail(
     to: string,

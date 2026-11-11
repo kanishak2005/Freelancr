@@ -896,3 +896,9 @@ describe("PRD 06 Task D — Deliverable Submission & File Reference Integration"
     }
   });
 });
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
+});

@@ -1,4 +1,5 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
+import mongoose from "mongoose";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { AddressInfo } from "node:net";
@@ -129,4 +130,10 @@ describe("PRD 05 — Marketplace Discovery, Saved Jobs, Match Score & Trust Test
       server.close();
     }
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

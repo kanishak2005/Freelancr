@@ -41,12 +41,25 @@ export default function LoginPage() {
     dispatch(setCredentials(user));
 
     // Role-specific redirect
+    const isPending =
+      typeof user.onboardingStatus === "string" &&
+      user.onboardingStatus.trim().toLowerCase() === "pending";
+
     if (user.role === "admin") {
       navigate("/admin");
     } else if (user.role === "client") {
-      navigate("/my-jobs");
+      if (isPending) {
+        navigate("/onboarding/client");
+      } else {
+        navigate("/my-jobs");
+      }
     } else {
-      navigate("/dashboard");
+      // Freelancer: If explicitly pending, route to onboarding wizard; otherwise dashboard
+      if (isPending) {
+        navigate("/onboarding/freelancer");
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 

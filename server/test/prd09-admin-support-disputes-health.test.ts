@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import app from "../src/app";
 import { generateAccessToken } from "../src/utils/jwt";
 import { SupportTicketService } from "../src/modules/support/supportTicket.service";
@@ -348,4 +348,10 @@ describe("PRD 09 — Admin, Support, Disputes & System Health Suite", () => {
       ContractRepository.update = origUpdateContract;
     }
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

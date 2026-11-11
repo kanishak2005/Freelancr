@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import mongoose, { Types } from "mongoose";
@@ -952,6 +952,114 @@ describe("PRD 06 Task C — Milestone Backend Module & Amount Integrity", () => 
     }
   });
 
+  it("9b. Transaction-backed failure path: multi-document transaction aborts without calling manual compensation", async () => {
+    const origStartSession = mongoose.startSession;
+
+    let transactionStarted = false;
+    let transactionAborted = false;
+    let sessionEnded = false;
+    let manualCompensationCalled = false;
+
+    try {
+      const mockSession = {
+        withTransaction: async (fn: any) => {
+          transactionStarted = true;
+          try {
+            return await fn(mockSession);
+          } catch (err) {
+            transactionAborted = true;
+            throw err;
+          }
+        },
+        endSession: async () => {
+          sessionEnded = true;
+        },
+      };
+
+      (mongoose as any).startSession = async () => mockSession;
+
+      const clientId = new Types.ObjectId().toString();
+      const contractId = new Types.ObjectId().toString();
+
+      const origUserFindById = UserRepository.findById;
+      const origContractFindById = ContractRepository.findById;
+      const origMilestoneCreate = MilestoneRepository.create;
+      const origContractReserve = ContractRepository.reserveMilestoneAllocation;
+      const origContractRelease = ContractRepository.releaseMilestoneAllocation;
+      const origMilestoneFindSeq = MilestoneRepository.findByContractAndSequence;
+      const origMilestoneGetSum = MilestoneRepository.getApplicableAmountSum;
+
+      try {
+        (UserRepository as any).findById = async () => ({
+          _id: new Types.ObjectId(clientId),
+          role: "client",
+          isActive: true,
+        });
+
+        (ContractRepository as any).findById = async () => ({
+          _id: new Types.ObjectId(contractId),
+          client: { _id: new Types.ObjectId(clientId) },
+          status: "active",
+          executionMode: "milestone",
+          amount: 5000,
+          allocatedMilestoneAmount: 0,
+        });
+
+        (MilestoneRepository as any).findByContractAndSequence = async () => null;
+        (MilestoneRepository as any).getApplicableAmountSum = async () => 0;
+        (ContractRepository as any).reserveMilestoneAllocation = async () => ({
+          _id: contractId,
+          allocatedMilestoneAmount: 500,
+        });
+
+        (ContractRepository as any).releaseMilestoneAllocation = async () => {
+          manualCompensationCalled = true;
+          return { _id: contractId, allocatedMilestoneAmount: 0 };
+        };
+
+        (MilestoneRepository as any).create = async () => {
+          const err: any = new Error("E11000 duplicate key error on contract + sequence");
+          err.code = 11000;
+          throw err;
+        };
+
+        const token = generateAccessToken({ id: clientId, role: "client" });
+
+        const res = await makeRequest(
+          {
+            path: "/api/v1/milestones",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+          { contractId, title: "Tx Duplicate Crash", amount: 500, sequence: 1 }
+        );
+
+        assert.strictEqual(res.status, 409);
+        assert.strictEqual(transactionStarted, true, "Transaction must have started");
+        assert.strictEqual(transactionAborted, true, "Transaction must have aborted on error");
+        assert.strictEqual(sessionEnded, true, "Session must have ended");
+        assert.strictEqual(
+          manualCompensationCalled,
+          false,
+          "Manual compensation must NOT be invoked when transaction engine handles rollback"
+        );
+      } finally {
+        UserRepository.findById = origUserFindById;
+        ContractRepository.findById = origContractFindById;
+        MilestoneRepository.create = origMilestoneCreate;
+        ContractRepository.reserveMilestoneAllocation = origContractReserve;
+        ContractRepository.releaseMilestoneAllocation = origContractRelease;
+        MilestoneRepository.findByContractAndSequence = origMilestoneFindSeq;
+        MilestoneRepository.getApplicableAmountSum = origMilestoneGetSum;
+      }
+    } finally {
+      mongoose.startSession = origStartSession;
+    }
+  });
+
   it("10. Cancelled milestones release allocation correctly", async () => {
     const contractId = new Types.ObjectId().toString();
     let releasedAmount = 0;
@@ -1837,6 +1945,16 @@ describe("PRD 06 Task C — Milestone Backend Module & Amount Integrity", () => 
 
       assert.ok(recoveryAcquireResult, "Recovery worker must successfully acquire expired lock");
       assert.strictEqual(recoveryAcquireResult.maintenanceLock, true);
+      assert.strictEqual(
+        recoveryAcquireResult.maintenanceLockToken,
+        recoveryToken,
+        "Recovery token must be stored on the acquired lock"
+      );
+      assert.ok(
+        recoveryAcquireResult.maintenanceLockExpiresAt instanceof Date &&
+          recoveryAcquireResult.maintenanceLockExpiresAt.getTime() > Date.now(),
+        "Resulting expiry must reflect the requested lease duration in the future"
+      );
     } finally {
       UserRepository.findById = origUserFindById;
       ContractRepository.findById = origContractFindById;
@@ -2080,3 +2198,10 @@ describe("PRD 06 Task C — Milestone Backend Module & Amount Integrity", () => 
     }
   });
 });
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
+});
+

@@ -1,11 +1,11 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import app from "../src/app";
 import { mongoSanitize } from "../src/middleware/mongoSanitize.middleware";
 import { AuditService } from "../src/modules/audit/audit.service";
 import { AuditLog } from "../src/modules/audit/audit.model";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 // Helper for testing HTTP requests against Express app
 function makeRequest(
@@ -323,5 +323,11 @@ describe("PRD 03 Security Hardening & Regression Tests", () => {
     );
     assert.ok(typeof res.body.uptime === "number");
     assert.ok(typeof res.body.timestamp === "string");
+  });
+
+  after(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
   });
 });

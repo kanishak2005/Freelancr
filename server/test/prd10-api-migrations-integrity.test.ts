@@ -1,4 +1,5 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
+import mongoose from "mongoose";
 import assert from "node:assert/strict";
 import http from "node:http";
 import app from "../src/app";
@@ -101,4 +102,10 @@ describe("PRD 10 — API Standardization, Index Discipline & Health Checks", () 
     assert.ok(safeUserFields.includes("-password"));
     assert.ok(safeUserFields.includes("-refreshToken"));
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

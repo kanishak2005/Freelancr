@@ -21,6 +21,7 @@ interface BackendUser {
   email: string;
   role: string;
   avatar?: string;
+  onboardingStatus?: string;
 }
 
 interface AuthResponse {
@@ -43,6 +44,7 @@ const normalizeUser = (
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    onboardingStatus: user.onboardingStatus,
   };
 };
 
@@ -137,6 +139,72 @@ export const googleAuthUser = async (payload: {
 }) => {
   const response = await api.post<AuthResponse>("/auth/google", payload);
 
+  const data = response.data;
+
+  return {
+    ...data,
+    data: {
+      ...data.data,
+      user: data.data.user ? normalizeUser(data.data.user) : undefined,
+    },
+  };
+};
+
+export interface SendOtpPayload {
+  email: string;
+}
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  data: {
+    resendAvailableAt: string;
+  };
+}
+
+export interface VerifyOtpPayload {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  data: {
+    registrationToken: string;
+    expiresAt: string;
+  };
+}
+
+export interface CompleteRegistrationPayload {
+  registrationToken: string;
+  email: string;
+  fullName: string;
+  password: string;
+  role: "client" | "freelancer";
+}
+
+export const sendRegistrationOtp = async (payload: SendOtpPayload) => {
+  const response = await api.post<SendOtpResponse>(
+    "/auth/send-registration-otp",
+    payload
+  );
+  return response.data;
+};
+
+export const verifyRegistrationOtp = async (payload: VerifyOtpPayload) => {
+  const response = await api.post<VerifyOtpResponse>(
+    "/auth/verify-registration-otp",
+    payload
+  );
+  return response.data;
+};
+
+export const completeRegistration = async (payload: CompleteRegistrationPayload) => {
+  const response = await api.post<AuthResponse>(
+    "/auth/complete-registration",
+    payload
+  );
   const data = response.data;
 
   return {

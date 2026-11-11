@@ -1,7 +1,7 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import app from "../src/app";
 import { generateAccessToken } from "../src/utils/jwt";
 import { UserRepository } from "../src/modules/users/user.repository";
@@ -311,4 +311,10 @@ describe("Workstream 2 — Upload Memory Hardening & Security Verification Suite
       UserRepository.findById = origUserFind;
     }
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

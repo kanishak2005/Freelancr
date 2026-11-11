@@ -1,7 +1,7 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import app from "../src/app";
 import { generateAccessToken } from "../src/utils/jwt";
 import { ChatService } from "../src/modules/chat/chat.service";
@@ -245,4 +245,10 @@ describe("PRD 08 — Chat, Notifications & Upload Reliability Integration Suite"
       ChatRepository.create = origCreate;
     }
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
+import DiscoveryLayout from "../layouts/DiscoveryLayout";
 
 import HomePage from "../pages/HomePage";
 import JobsPage from "../pages/JobsPage";
@@ -15,6 +16,14 @@ import ResetPasswordPage from "../pages/ResetPasswordPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
 import ProtectedRoute from "../components/common/ProtectedRoute";
+import {
+  DashboardOnboardingGuard,
+  FreelancerWizardGuard,
+  ClientDashboardGuard,
+  ClientWizardGuard,
+} from "../components/auth/OnboardingGuard";
+import FreelancerOnboardingPage from "../pages/FreelancerOnboardingPage";
+import ClientOnboardingPage from "../pages/ClientOnboardingPage";
 
 import MyProposalsPage from "../pages/MyProposalsPage";
 import ProposalDetailsPage from "../pages/ProposalDetailsPage";
@@ -49,14 +58,19 @@ export const router = createBrowserRouter([
     element: <HomePage />,
   },
 
-  // Public Discovery Routes (accessible without sign-in, with optional authentication)
+  // Public & Authenticated Discovery Routes (handles public nav or authenticated workspace sidebar dynamically)
   {
-    path: "/jobs",
-    element: <JobsPage />,
-  },
-  {
-    path: "/jobs/:id",
-    element: <JobDetailsPage />,
+    element: <DiscoveryLayout />,
+    children: [
+      {
+        path: "/jobs",
+        element: <JobsPage />,
+      },
+      {
+        path: "/jobs/:id",
+        element: <JobDetailsPage />,
+      },
+    ],
   },
 
   // Authentication Flows
@@ -81,20 +95,61 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
+      // Freelancer Onboarding Route (Guarded for pending freelancers)
+      {
+        element: <FreelancerWizardGuard />,
+        children: [
+          {
+            path: "/onboarding/freelancer",
+            element: <FreelancerOnboardingPage />,
+          },
+        ],
+      },
+      // Client Onboarding Route (Guarded for pending clients)
+      {
+        element: <ClientWizardGuard />,
+        children: [
+          {
+            path: "/onboarding/client",
+            element: <ClientOnboardingPage />,
+          },
+        ],
+      },
       {
         element: <MainLayout />,
         children: [
           {
-            path: "/dashboard",
-            element: <FreelancerDashboardPage />,
+            element: <DashboardOnboardingGuard />,
+            children: [
+              {
+                path: "/dashboard",
+                element: <FreelancerDashboardPage />,
+              },
+            ],
           },
+          // Client Application Routes (Guarded for pending clients)
           {
-            path: "/jobs/create",
-            element: <CreateJobPage />,
+            element: <ClientDashboardGuard allowedRoles={["client"]} />,
+            children: [
+              {
+                path: "/my-jobs",
+                element: <MyJobsPage />,
+              },
+              {
+                path: "/jobs/create",
+                element: <CreateJobPage />,
+              },
+            ],
           },
+          // Job Proposals Review Route (Accessible by clients and admins, guarded for pending clients)
           {
-            path: "/my-jobs",
-            element: <MyJobsPage />,
+            element: <ClientDashboardGuard allowedRoles={["client", "admin"]} />,
+            children: [
+              {
+                path: "/jobs/:id/proposals",
+                element: <JobProposalsPage />,
+              },
+            ],
           },
           {
             path: "/my-proposals",
@@ -103,10 +158,6 @@ export const router = createBrowserRouter([
           {
             path: "/proposals/:id",
             element: <ProposalDetailsPage />,
-          },
-          {
-            path: "/jobs/:id/proposals",
-            element: <JobProposalsPage />,
           },
           {
             path: "/contracts",

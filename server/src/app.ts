@@ -107,6 +107,14 @@ app.use(async (req, _res, next) => {
     return next();
   }
 
+  // Explicit test-only database bypass: only active when BOTH NODE_ENV is "test" AND FREELANCR_TEST_DB_BYPASS is "true"
+  if (
+    process.env.NODE_ENV === "test" &&
+    process.env.FREELANCR_TEST_DB_BYPASS === "true"
+  ) {
+    return next();
+  }
+
   try {
     await ensureFreelancrDatabaseConnection();
     return next();

@@ -1,7 +1,7 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import app from "../src/app";
 import { Wallet } from "../src/modules/payments/wallet.model";
 import { FinancialLedger } from "../src/modules/payments/financialLedger.model";
@@ -538,4 +538,10 @@ describe("Workstream 1 — Partial Wallet Cashout Lifecycle & Accounting Invaria
       CashoutRequest.countDocuments = origCashoutCount;
     }
   });
+});
+
+after(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
 });

@@ -1,8 +1,9 @@
-import test, { describe, it } from "node:test";
+import test, { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import crypto from "node:crypto";
 import { AddressInfo } from "node:net";
+import mongoose from "mongoose";
 
 import app from "../src/app";
 import { authorize } from "../src/middleware/authorize.middleware";
@@ -314,5 +315,11 @@ describe("Baseline Negative Security & Regression Tests", () => {
       true,
       "Payment schema must declare razorpayOrderId with unique: true"
     );
+  });
+
+  after(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
   });
 });

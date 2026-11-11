@@ -1,7 +1,7 @@
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import app from "../src/app";
 import { Contract } from "../src/modules/contracts/contract.model";
 import { ContractService } from "../src/modules/contracts/contract.service";
@@ -421,6 +421,12 @@ describe("PRD 06 Task A — Contract Lifecycle, Schema Compatibility & Index Opt
       assert.deepStrictEqual(sortApplied, { createdAt: -1 }, "Must retain createdAt descending sort");
     } finally {
       Contract.find = origFind;
+    }
+  });
+
+  after(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
     }
   });
 });

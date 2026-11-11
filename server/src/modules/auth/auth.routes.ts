@@ -8,6 +8,9 @@ import {
   changePasswordValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  sendRegistrationOtpValidation,
+  verifyRegistrationOtpValidation,
+  completeRegistrationValidation,
 } from "./auth.validation";
 
 import { validate } from "../../middleware/validate.middleware";
@@ -19,6 +22,30 @@ import {
 } from "../../middleware/rateLimit.middleware";
 
 const router = Router();
+
+router.post(
+  "/send-registration-otp",
+  authRateLimiter,
+  sendRegistrationOtpValidation,
+  validate,
+  AuthController.sendRegistrationOtp
+);
+
+router.post(
+  "/verify-registration-otp",
+  authRateLimiter,
+  verifyRegistrationOtpValidation,
+  validate,
+  AuthController.verifyRegistrationOtp
+);
+
+router.post(
+  "/complete-registration",
+  authRateLimiter,
+  completeRegistrationValidation,
+  validate,
+  AuthController.completeRegistration
+);
 
 router.post(
   "/register",

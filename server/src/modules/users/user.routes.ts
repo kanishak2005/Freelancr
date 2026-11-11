@@ -1,11 +1,34 @@
 import { Router } from "express";
 import { UserController } from "./user.controller";
 import { authenticate } from "../../middleware/auth.middleware";
+import { authorize } from "../../middleware/authorize.middleware";
 import { validate } from "../../middleware/validate.middleware";
-import { updateProfileValidation } from "./user.validation";
+import {
+  updateProfileValidation,
+  freelancerOnboardingValidation,
+  clientOnboardingValidation,
+} from "./user.validation";
 import { upload, resumeUpload } from "../uploads/multer";
 
 const router = Router();
+
+router.put(
+  "/onboarding/freelancer",
+  authenticate,
+  authorize("freelancer"),
+  freelancerOnboardingValidation,
+  validate,
+  UserController.onboardFreelancer
+);
+
+router.put(
+  "/onboarding/client",
+  authenticate,
+  authorize("client"),
+  clientOnboardingValidation,
+  validate,
+  UserController.onboardClient
+);
 
 router.get(
   "/profile",

@@ -3,6 +3,32 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 import { UserService } from "./user.service";
 
 export class UserController {
+  static async onboardFreelancer(req: AuthRequest, res: Response) {
+    const user = await UserService.completeFreelancerOnboarding(
+      req.user!.id,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Freelancer onboarding completed successfully",
+      data: user,
+    });
+  }
+
+  static async onboardClient(req: AuthRequest, res: Response) {
+    const user = await UserService.completeClientOnboarding(
+      req.user!.id,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Client onboarding completed successfully",
+      data: user,
+    });
+  }
+
   static async getProfile(
     req: AuthRequest,
     res: Response

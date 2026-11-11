@@ -72,3 +72,55 @@ export const googleAuthValidation = [
     .isIn(["client", "freelancer"])
     .withMessage("Role must be client or freelancer"),
 ];
+
+export const sendRegistrationOtpValidation = [
+  body("email")
+    .trim()
+    .isEmail()
+    .withMessage("Valid email is required")
+    .normalizeEmail(),
+];
+
+export const verifyRegistrationOtpValidation = [
+  body("email")
+    .trim()
+    .isEmail()
+    .withMessage("Valid email is required")
+    .normalizeEmail(),
+
+  body("otp")
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits")
+    .matches(/^\d{6}$/)
+    .withMessage("OTP must be numeric"),
+];
+
+export const completeRegistrationValidation = [
+  body("registrationToken")
+    .notEmpty()
+    .withMessage("Registration token is required")
+    .isString()
+    .withMessage("Registration token must be a string"),
+
+  body("email")
+    .trim()
+    .isEmail()
+    .withMessage("Valid email is required")
+    .normalizeEmail(),
+
+  body("fullName")
+    .trim()
+    .notEmpty()
+    .withMessage("Full name is required")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Full name must be between 2 and 100 characters"),
+
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters"),
+
+  body("role")
+    .isIn(["client", "freelancer"])
+    .withMessage("Role must be client or freelancer"),
+];

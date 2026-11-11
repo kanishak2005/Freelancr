@@ -462,7 +462,7 @@ export default function FreelancerDashboardPage() {
                 to="/jobs"
                 className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
               >
-                Explore all jobs ?
+                Explore all jobs →
               </Link>
             </div>
 

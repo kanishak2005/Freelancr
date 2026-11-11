@@ -6,8 +6,10 @@ import { Link, useNavigate } from "react-router-dom";
 
 import {
   getCurrentUser,
-  registerUser,
   googleAuthUser,
+  sendRegistrationOtp,
+  verifyRegistrationOtp,
+  completeRegistration,
 } from "../services/auth.api";
 
 import {
@@ -17,16 +19,28 @@ import {
 import { useAppDispatch } from "../store/hooks";
 import { socket } from "../lib/socket";
 import GoogleSignInButton from "../components/auth/GoogleSignInButton";
+import OtpVerificationStep from "../components/auth/OtpVerificationStep";
+
+type RegistrationStep =
+  | "form"
+  | "verifying_otp";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  // Registration step state
+  const [step, setStep] = useState<RegistrationStep>("form");
+
+  // Form fields
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<"client" | "freelancer">("freelancer");
+
+  // OTP and Resend state
+  const [resendAvailableAt, setResendAvailableAt] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -42,53 +56,142 @@ export default function RegisterPage() {
     const user = await getCurrentUser();
     dispatch(setCredentials(user));
 
+    const isPending =
+      typeof user.onboardingStatus === "string" &&
+      user.onboardingStatus.trim().toLowerCase() === "pending";
+
     if (user.role === "admin") {
       navigate("/admin");
     } else if (user.role === "client") {
-      navigate("/my-jobs");
+      if (isPending) {
+        navigate("/onboarding/client");
+      } else {
+        navigate("/my-jobs");
+      }
     } else {
-      navigate("/dashboard");
+      // Freelancer: If explicitly pending, route to onboarding wizard; otherwise dashboard
+      if (isPending) {
+        navigate("/onboarding/freelancer");
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 
-  const handleSubmit = async (event: FormEvent) => {
+  // Step 1: Initial Form Submit -> Validate & Request OTP
+  const handleInitiateRegistration = async (event: FormEvent) => {
     event.preventDefault();
     if (loading) return;
 
     setError("");
+
+    // Client-side validations
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+    if (trimmedName.length < 3) {
+      setError("Full name must be at least 3 characters.");
+      return;
+    }
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await registerUser({
-        fullName,
-        email,
-        password,
-        role,
-      });
-
-      const token =
-        response.data?.accessToken ||
-        response.data?.token;
-
-      if (token) {
-        await handleAuthSuccess(token);
-        return;
-      }
-
-      navigate("/login");
+      const response = await sendRegistrationOtp({ email: trimmedEmail });
+      setResendAvailableAt(response.data.resendAvailableAt || "");
+      setStep("verifying_otp");
     } catch (err: unknown) {
-      console.error("Registration failed:", err);
+      console.error("OTP send failed:", err);
       const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
       setError(
         apiErr?.response?.data?.message ||
           apiErr?.message ||
-          "Registration failed. Please try again."
+          "Failed to send verification code. Please check your email and try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  // Step 2 & 3: Verify OTP -> Receive Registration Token -> Complete Registration
+  const handleVerifyOtp = async (otpCode: string) => {
+    if (loading) return;
+    setError("");
+    setLoading(true);
+
+    try {
+      // 1. Verify OTP with backend
+      const verifyRes = await verifyRegistrationOtp({
+        email: email.trim(),
+        otp: otpCode,
+      });
+
+      const token = verifyRes.data.registrationToken;
+
+      // 2. Complete registration atomically using verified token
+      const completeRes = await completeRegistration({
+        registrationToken: token,
+        email: email.trim(),
+        fullName: fullName.trim(),
+        password,
+        role,
+      });
+
+      const accessToken =
+        completeRes.data?.accessToken ||
+        completeRes.data?.token;
+
+      if (accessToken) {
+        // Discard sensitive temporary credentials
+        setPassword("");
+        await handleAuthSuccess(accessToken);
+        return;
+      }
+
+      navigate("/login");
+    } catch (err: unknown) {
+      console.error("Verification or completion failed:", err);
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(
+        apiErr?.response?.data?.message ||
+          apiErr?.message ||
+          "Verification failed. Please check the code and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP handler with server cooldown tracking
+  const handleResendOtp = async () => {
+    if (loading) return;
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await sendRegistrationOtp({ email: email.trim() });
+      setResendAvailableAt(response.data.resendAvailableAt || "");
+    } catch (err: unknown) {
+      console.error("Resend failed:", err);
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(
+        apiErr?.response?.data?.message ||
+          apiErr?.message ||
+          "Unable to resend verification code right now. Please wait a moment."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google OAuth registration
   const handleGoogleSuccess = async (credential: string) => {
     if (loading) return;
 
@@ -152,210 +255,249 @@ export default function RegisterPage() {
             </span>
           </Link>
           <h1 className="mt-6 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Join the Marketplace
+            {step === "form" ? "Join the Marketplace" : "Verify Your Account"}
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Create an account to start collaborating on milestone-backed freelance projects
+            {step === "form"
+              ? "Create an account to start collaborating on milestone-backed freelance projects"
+              : "Complete OTP verification to activate your secure account"}
           </p>
         </div>
 
         {/* Card Container */}
         <div className="mt-8 bg-white py-8 px-6 sm:px-10 shadow-xl shadow-slate-200/50 sm:rounded-2xl border border-slate-200/80">
-          {error && (
-            <div
-              role="alert"
-              className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-3 animate-in fade-in duration-200"
-            >
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Account Role Selector Card */}
-          <div className="mb-6">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-              I want to join as:
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                id="role-freelancer-btn"
-                onClick={() => setRole("freelancer")}
-                className={`p-3.5 rounded-xl border text-left transition-all ${
-                  role === "freelancer"
-                    ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20"
-                    : "border-slate-200 hover:border-slate-300 bg-white"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-bold text-slate-900">Freelancer</span>
-                  {role === "freelancer" && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  Find work, submit proposals, get paid
-                </p>
-              </button>
-
-              <button
-                type="button"
-                id="role-client-btn"
-                onClick={() => setRole("client")}
-                className={`p-3.5 rounded-xl border text-left transition-all ${
-                  role === "client"
-                    ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20"
-                    : "border-slate-200 hover:border-slate-300 bg-white"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-bold text-slate-900">Client</span>
-                  {role === "client" && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  Post projects, hire talent, review work
-                </p>
-              </button>
-            </div>
-          </div>
-
-          {/* Google Sign-up with role passing */}
-          <div className="space-y-4">
-            <GoogleSignInButton
-              text="signup_with"
-              onSuccess={handleGoogleSuccess}
-              onError={(msg) => setError(msg)}
-              disabled={loading}
-            />
-
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-slate-200 w-full" />
-              <span className="bg-white px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 absolute">
-                or register with email
-              </span>
-            </div>
-          </div>
-
-          {/* Registration Form */}
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label
-                htmlFor="register-name"
-                className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
-              >
-                Full Name
-              </label>
-              <input
-                id="register-name"
-                type="text"
-                autoComplete="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                minLength={3}
-                disabled={loading}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
-                placeholder="Jane Doe"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="register-email"
-                className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
-              >
-                Email Address
-              </label>
-              <input
-                id="register-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
-                placeholder="jane@example.com"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="register-password"
-                className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
-              >
-                Password (min 8 characters)
-              </label>
-              <div className="relative">
-                <input
-                  id="register-password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  disabled={loading}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+          {step === "form" ? (
+            <>
+              {error && (
+                <div
+                  role="alert"
+                  className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-3 animate-in fade-in duration-200"
                 >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                    </svg>
+                  <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Account Role Selector Card */}
+              <div className="mb-6">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  I want to join as:
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    id="role-freelancer-btn"
+                    onClick={() => setRole("freelancer")}
+                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                      role === "freelancer"
+                        ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-bold text-slate-900">Freelancer</span>
+                      {role === "freelancer" && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Find work, submit proposals, get paid
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="role-client-btn"
+                    onClick={() => setRole("client")}
+                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                      role === "client"
+                        ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-bold text-slate-900">Client</span>
+                      {role === "client" && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Post projects, hire talent, review work
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Google Sign-up with role passing */}
+              <div className="space-y-4">
+                <GoogleSignInButton
+                  text="signup_with"
+                  onSuccess={handleGoogleSuccess}
+                  onError={(msg) => setError(msg)}
+                  disabled={loading}
+                />
+
+                <div className="relative flex items-center justify-center">
+                  <div className="border-t border-slate-200 w-full" />
+                  <span className="bg-white px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 absolute">
+                    or register with email
+                  </span>
+                </div>
+              </div>
+
+              {/* Step 1 Registration Form */}
+              <form onSubmit={handleInitiateRegistration} className="mt-6 space-y-4">
+                <div>
+                  <label
+                    htmlFor="register-name"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+                  >
+                    Full Name
+                  </label>
+                  <input
+                    id="register-name"
+                    type="text"
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    minLength={3}
+                    disabled={loading}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
+                    placeholder="Jane Doe"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="register-email"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+                  >
+                    Email Address
+                  </label>
+                  <input
+                    id="register-email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
+                    placeholder="jane@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="register-password"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+                  >
+                    Password (min 8 characters)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="register-password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      disabled={loading}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"
+                          />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  id="register-submit-btn"
+                  disabled={loading}
+                  className="w-full mt-2 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      <span>Sending verification code...</span>
+                    </span>
                   ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    "Send Verification Code"
                   )}
                 </button>
+              </form>
+
+              {/* Footer note */}
+              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                <p className="text-sm text-slate-600">
+                  Already have an account?{" "}
+                  <Link
+                    to="/login"
+                    id="link-to-login"
+                    className="font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    Sign in
+                  </Link>
+                </p>
               </div>
-            </div>
-
-            <button
-              type="submit"
-              id="register-submit-btn"
-              disabled={loading}
-              className="w-full mt-2 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  <span>Creating your account...</span>
-                </span>
-              ) : (
-                `Create ${role === "client" ? "Client" : "Freelancer"} Account`
-              )}
-            </button>
-          </form>
-
-          {/* Footer note */}
-          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-            <p className="text-sm text-slate-600">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                id="link-to-login"
-                className="font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Sign in
-              </Link>
-            </p>
-          </div>
+            </>
+          ) : (
+            /* Step 2 & 3: OTP Verification and Completion */
+            <OtpVerificationStep
+              email={email.trim()}
+              resendAvailableAt={resendAvailableAt}
+              loading={loading}
+              error={error}
+              onVerify={handleVerifyOtp}
+              onResend={handleResendOtp}
+              onChangeEmail={() => {
+                setError("");
+                setStep("form");
+              }}
+            />
+          )}
         </div>
       </div>
     </main>

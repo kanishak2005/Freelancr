@@ -74,6 +74,12 @@ export const env = {
   MAIL_FROM:
     process.env.MAIL_FROM || "",
 
+  OTP_HMAC_SECRET:
+    process.env.OTP_HMAC_SECRET ||
+    (process.env.NODE_ENV === "test"
+      ? "test-otp-hmac-secret-min-32-chars-long-freelancr-secure"
+      : requiredEnv("OTP_HMAC_SECRET")),
+
   get GOOGLE_CLIENT_ID(): string {
     return process.env.GOOGLE_CLIENT_ID || "";
   },

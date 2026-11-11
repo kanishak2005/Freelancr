@@ -3,6 +3,49 @@ import { AuthService } from "./auth.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 
 export class AuthController {
+  static async sendRegistrationOtp(req: Request, res: Response) {
+    const result = await AuthService.sendRegistrationOtp(req.body);
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: {
+        resendAvailableAt: result.resendAvailableAt,
+      },
+    });
+  }
+
+  static async verifyRegistrationOtp(req: Request, res: Response) {
+    const result = await AuthService.verifyRegistrationOtp(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+      data: {
+        registrationToken: result.registrationToken,
+        expiresAt: result.expiresAt,
+      },
+    });
+  }
+
+  static async completeRegistration(req: Request, res: Response) {
+    const result = await AuthService.completeRegistration(req.body);
+
+    res.cookie("refreshToken", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Registration completed successfully",
+      data: {
+        user: result.user,
+        accessToken: result.accessToken,
+      },
+    });
+  }
+
   static async register(req: Request, res: Response) {
     const result = await AuthService.register(req.body);
 

@@ -1,8 +1,167 @@
 import { UserRepository } from "./user.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
 import { UploadService } from "../uploads/upload.service";
+import { FreelancerOnboardingDto, ClientOnboardingDto } from "./user.types";
+import { syncSkillsWithProficiencies } from "./user.utils";
+import { AuthService } from "../auth/auth.service";
 
 export class UserService {
+  static async completeFreelancerOnboarding(
+    userId: string,
+    dto: FreelancerOnboardingDto
+  ) {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "User not found");
+    }
+
+    if (user.role !== "freelancer") {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "Only freelancers can complete freelancer onboarding"
+      );
+    }
+
+    // Merge & sync top-level skills with skillProficiencies
+    const existingSkills = user.skills || [];
+    const updatedSkills = syncSkillsWithProficiencies(
+      dto.skills !== undefined ? dto.skills : existingSkills,
+      dto.skillProficiencies
+    );
+
+    const existingProfile = user.freelancerProfile || {};
+
+    const updateDoc: any = {
+      skills: updatedSkills,
+      onboardingStatus: "completed",
+      freelancerProfile: {
+        title: dto.title !== undefined ? dto.title : (existingProfile.title || ""),
+        experienceLevel:
+          dto.experienceLevel !== undefined
+            ? dto.experienceLevel
+            : existingProfile.experienceLevel,
+        hourlyRate:
+          dto.hourlyRate !== undefined
+            ? dto.hourlyRate
+            : existingProfile.hourlyRate,
+        skillProficiencies:
+          dto.skillProficiencies !== undefined
+            ? dto.skillProficiencies
+            : existingProfile.skillProficiencies,
+        education:
+          dto.education !== undefined
+            ? dto.education
+            : existingProfile.education,
+        projects:
+          dto.projects !== undefined
+            ? dto.projects
+            : existingProfile.projects,
+        employmentHistory:
+          dto.employmentHistory !== undefined
+            ? dto.employmentHistory
+            : existingProfile.employmentHistory,
+        preferredCategories:
+          dto.preferredCategories !== undefined
+            ? dto.preferredCategories
+            : existingProfile.preferredCategories,
+        workArrangement:
+          dto.workArrangement !== undefined
+            ? dto.workArrangement
+            : existingProfile.workArrangement,
+        remoteOnly:
+          dto.remoteOnly !== undefined
+            ? dto.remoteOnly
+            : existingProfile.remoteOnly,
+        minBudget:
+          dto.minBudget !== undefined
+            ? dto.minBudget
+            : existingProfile.minBudget,
+        maxBudget:
+          dto.maxBudget !== undefined
+            ? dto.maxBudget
+            : existingProfile.maxBudget,
+        availability:
+          dto.availability !== undefined
+            ? dto.availability
+            : (existingProfile.availability || "available"),
+      },
+    };
+
+    if (dto.bio !== undefined) updateDoc.bio = dto.bio;
+    if (dto.city !== undefined) updateDoc.city = dto.city;
+    if (dto.country !== undefined) updateDoc.country = dto.country;
+
+    const updatedUser = await UserRepository.updateProfile(userId, updateDoc);
+    if (!updatedUser) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "User not found");
+    }
+
+    return AuthService.sanitizeUser(updatedUser);
+  }
+
+  static async completeClientOnboarding(
+    userId: string,
+    dto: ClientOnboardingDto
+  ) {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "User not found");
+    }
+
+    if (user.role !== "client") {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "Only clients can complete client onboarding"
+      );
+    }
+
+    const existingProfile = user.companyProfile || {};
+
+    const updateDoc: any = {
+      onboardingStatus: "completed",
+      companyProfile: {
+        companyName:
+          dto.companyName !== undefined
+            ? dto.companyName
+            : (existingProfile.companyName || ""),
+        companyWebsite:
+          dto.companyWebsite !== undefined
+            ? dto.companyWebsite
+            : (existingProfile.companyWebsite || ""),
+        industry:
+          dto.industry !== undefined
+            ? dto.industry
+            : (existingProfile.industry || ""),
+        companySize:
+          dto.companySize !== undefined
+            ? dto.companySize
+            : existingProfile.companySize,
+        billingAddress:
+          dto.billingAddress !== undefined
+            ? { ...existingProfile.billingAddress, ...dto.billingAddress }
+            : existingProfile.billingAddress,
+        preferredBudgetRange:
+          dto.preferredBudgetRange !== undefined
+            ? { ...existingProfile.preferredBudgetRange, ...dto.preferredBudgetRange }
+            : existingProfile.preferredBudgetRange,
+        preferredCategories:
+          dto.preferredCategories !== undefined
+            ? dto.preferredCategories
+            : existingProfile.preferredCategories,
+      },
+    };
+
+    if (dto.city !== undefined) updateDoc.city = dto.city;
+    if (dto.country !== undefined) updateDoc.country = dto.country;
+
+    const updatedUser = await UserRepository.updateProfile(userId, updateDoc);
+    if (!updatedUser) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "User not found");
+    }
+
+    return AuthService.sanitizeUser(updatedUser);
+  }
+
   static async getProfile(userId: string) {
     const user = await UserRepository.findById(userId);
 

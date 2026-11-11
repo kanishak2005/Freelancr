@@ -7,6 +7,12 @@ import type {
   CreateJobPayload,
 } from "../../services/jobs.api";
 
+import { Autocomplete } from "../common/Autocomplete";
+import { MultiSelectAutocomplete } from "../common/MultiSelectAutocomplete";
+import { POPULAR_SKILLS } from "../../data/skillsData";
+import { POPULAR_CATEGORIES } from "../../data/categoriesData";
+import { getCitiesForCountry } from "../../data/locationsData";
+
 interface JobFormProps {
   initialData?: Partial<CreateJobPayload>;
 
@@ -36,9 +42,8 @@ export default function JobForm({
     );
 
   const [skills, setSkills] =
-    useState(
-      initialData?.skills?.join(", ") ||
-        ""
+    useState<string[]>(
+      initialData?.skills || []
     );
 
   const [budget, setBudget] =
@@ -108,12 +113,7 @@ export default function JobForm({
       return;
     }
 
-    const skillList = skills
-      .split(",")
-      .map((skill) => skill.trim())
-      .filter(Boolean);
-
-    if (skillList.length === 0) {
+    if (skills.length === 0) {
       setError(
         "Please add at least one skill."
       );
@@ -127,7 +127,7 @@ export default function JobForm({
         title: title.trim(),
         description: description.trim(),
         category: category.trim(),
-        skills: skillList,
+        skills: skills,
         budget: numericBudget,
         budgetType,
         experienceLevel,
@@ -195,41 +195,30 @@ export default function JobForm({
 
       <div className="grid gap-5 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Category
-          </label>
-
-          <input
+          <Autocomplete
+            id="job-category"
+            label="Category"
             value={category}
-            onChange={(event) =>
-              setCategory(
-                event.target.value
-              )
-            }
-            required
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
-            placeholder="Web Development"
+            onChange={setCategory}
+            options={POPULAR_CATEGORIES}
+            placeholder="Select or enter category (e.g. Web Development)"
+            required={true}
+            allowCustom={true}
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Skills
-          </label>
-
-          <input
-            value={skills}
-            onChange={(event) =>
-              setSkills(event.target.value)
-            }
-            required
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
-            placeholder="React, Node.js, MongoDB"
+          <MultiSelectAutocomplete
+            id="job-skills"
+            label="Required Skills"
+            selectedItems={skills}
+            onChange={setSkills}
+            options={POPULAR_SKILLS}
+            placeholder="Search skills (e.g. React, Node.js)..."
+            required={true}
+            allowCustom={true}
+            maxItems={20}
           />
-
-          <p className="mt-1 text-xs text-gray-500">
-            Separate skills with commas.
-          </p>
         </div>
       </div>
 
@@ -328,20 +317,15 @@ export default function JobForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Location
-          </label>
-
-          <input
+          <Autocomplete
+            id="job-location"
+            label="Location"
             value={location}
-            onChange={(event) =>
-              setLocation(
-                event.target.value
-              )
-            }
+            onChange={setLocation}
+            options={getCitiesForCountry()}
             disabled={isRemote}
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500 disabled:bg-gray-100"
-            placeholder="Jaipur, India"
+            placeholder="e.g. Bengaluru, India, or London"
+            allowCustom={true}
           />
         </div>
       </div>
