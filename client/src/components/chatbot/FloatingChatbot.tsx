@@ -82,12 +82,41 @@ export default function FloatingChatbot() {
         },
       ]);
     } catch (err: any) {
+      let errorMessage = "An unexpected error occurred while communicating with the support assistant. Please try again.";
+
+      if (err?.response) {
+        const status = err.response.status;
+        const data = err.response.data;
+
+        if (status === 400) {
+          if (Array.isArray(data?.errors) && data.errors.length > 0 && typeof data.errors[0]?.msg === "string") {
+            errorMessage = data.errors[0].msg;
+          } else if (typeof data?.message === "string" && data.message.trim()) {
+            errorMessage = data.message;
+          } else {
+            errorMessage = "Your question could not be processed. Please enter a valid question between 1 and 500 characters.";
+          }
+        } else if (status >= 500 && status < 600) {
+          errorMessage = "The support service encountered a temporary server error. Please try again in a few moments or escalate to our support team.";
+        } else if (status === 401 || status === 403) {
+          errorMessage = "You do not have permission to perform this action. Please sign in and try again.";
+        } else if (status === 429) {
+          errorMessage = "Too many requests. Please wait a moment before asking another question.";
+        } else if (typeof data?.message === "string" && data.message.trim()) {
+          errorMessage = data.message;
+        } else {
+          errorMessage = `Unable to complete your request (Error ${status}). Please try again later.`;
+        }
+      } else if (err?.request || err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+        errorMessage = "Unable to connect to the Freelancr support service. Please check your network connection or ensure the service is running, then try again.";
+      }
+
       setMessages([
         ...newMessages,
         {
           id: (Date.now() + 1).toString(),
           sender: "bot",
-          text: "I encountered an error querying the local knowledge base. Please try asking in a different way or escalate directly to our human support team.",
+          text: errorMessage,
           timestamp: new Date(),
         },
       ]);

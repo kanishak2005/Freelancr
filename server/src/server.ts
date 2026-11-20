@@ -8,7 +8,7 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    const { seedInitialKnowledgeBase } = await import("./modules/knowledge/knowledgeSeed");
+    const { seedInitialKnowledgeBase } = await import("./modules/knowledge/knowledgeSeed.js");
     await seedInitialKnowledgeBase();
 
     const server = http.createServer(app);

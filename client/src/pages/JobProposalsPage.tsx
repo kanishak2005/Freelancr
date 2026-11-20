@@ -132,6 +132,12 @@ export default function JobProposalsPage() {
     );
   }
 
+  const isOwner =
+    Boolean(user?.id) &&
+    user?.role === "client" &&
+    Boolean(job?.client?._id) &&
+    user?.id === job?.client?._id;
+
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       {/* Breadcrumb / Back Link */}
@@ -316,11 +322,41 @@ export default function JobProposalsPage() {
 
                     {/* Action Footer */}
                     <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                      <Link to={`/proposals/${proposal._id}`}>
-                        <Button variant="outline" size="sm">
-                          Review Full Proposal Details
-                        </Button>
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link to={`/proposals/${proposal._id}`}>
+                          <Button variant="outline" size="sm">
+                            Review Full Proposal Details
+                          </Button>
+                        </Link>
+
+                        {/* Contextual Message Freelancer Action */}
+                        {isOwner &&
+                          freelancer?._id &&
+                          freelancer._id !== user?.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-1.5"
+                              onClick={() => navigate(`/chat/${freelancer._id}`)}
+                            >
+                              <svg
+                                className="w-3.5 h-3.5 text-slate-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                />
+                              </svg>
+                              Message
+                            </Button>
+                          )}
+                      </div>
 
                       {isPending && isJobOpen && user?.role === "client" && (
                         <Button

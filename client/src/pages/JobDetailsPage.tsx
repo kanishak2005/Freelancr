@@ -15,6 +15,7 @@ import {
 } from "../services/proposals.api";
 
 import ProposalForm from "../components/proposals/ProposalForm";
+import { Button } from "../components/ui/Button";
 import { useAppSelector } from "../store/hooks";
 
 export default function JobDetailsPage() {
@@ -227,6 +228,37 @@ export default function JobDetailsPage() {
                 @{job.client.username}
               </p>
             </div>
+
+            {/* Contextual Message Client Action for Authenticated Freelancer */}
+            {user &&
+              user.role === "freelancer" &&
+              Boolean(user.id) &&
+              Boolean(job.client?._id) &&
+              job.client._id !== user.id && (
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={() => navigate(`/chat/${job.client._id}`)}
+                  >
+                    <svg
+                      className="w-4 h-4 text-slate-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    Message Client
+                  </Button>
+                </div>
+              )}
 
             <div className="mt-6 border-t pt-5">
               <p className="text-sm text-gray-500">

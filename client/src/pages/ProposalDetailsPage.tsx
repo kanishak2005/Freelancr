@@ -171,6 +171,44 @@ export default function ProposalDetailsPage() {
   const canEdit = isFreelancer && proposal.status === "pending";
   const canAccept = isClient && proposal.status === "pending" && job?.status === "open";
 
+  // Authoritative client ID resolution from job (object or string id)
+  const jobClientId = (job as any)?.client?._id
+    ? String((job as any).client._id)
+    : typeof (job as any)?.client === "string"
+    ? String((job as any).client)
+    : null;
+
+  // Authoritative freelancer ID resolution from proposal
+  const proposalFreelancerId = freelancer?._id
+    ? String(freelancer._id)
+    : typeof proposal.freelancer === "string"
+    ? String(proposal.freelancer)
+    : null;
+
+  // Role-aware and ownership-validated chat recipient resolution
+  let chatRecipientId: string | null = null;
+  let chatButtonLabel = "";
+
+  if (
+    isClient &&
+    Boolean(user?.id) &&
+    jobClientId === user?.id &&
+    proposalFreelancerId &&
+    proposalFreelancerId !== user?.id
+  ) {
+    chatRecipientId = proposalFreelancerId;
+    chatButtonLabel = "Message Freelancer";
+  } else if (
+    isFreelancer &&
+    Boolean(user?.id) &&
+    proposalFreelancerId === user?.id &&
+    jobClientId &&
+    jobClientId !== user?.id
+  ) {
+    chatRecipientId = jobClientId;
+    chatButtonLabel = "Message Client";
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       {/* Dynamic Back-link based on role */}
@@ -197,13 +235,40 @@ export default function ProposalDetailsPage() {
           </Link>
         )}
 
-        {job && (
-          <Link to={`/jobs/${job._id}`}>
-            <Button variant="ghost" size="sm">
-              View Public Job
+        <div className="flex items-center gap-2">
+          {chatRecipientId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1.5"
+              onClick={() => navigate(`/chat/${chatRecipientId}`)}
+            >
+              <svg
+                className="w-3.5 h-3.5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+              {chatButtonLabel}
             </Button>
-          </Link>
-        )}
+          )}
+
+          {job && (
+            <Link to={`/jobs/${job._id}`}>
+              <Button variant="ghost" size="sm">
+                View Public Job
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Main Proposal Card */}
