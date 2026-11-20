@@ -13,6 +13,7 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card, CardBody } from "../components/ui/Card";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export default function ProposalDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,8 @@ export default function ProposalDetailsPage() {
   const [bidAmount, setBidAmount] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [saving, setSaving] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -116,17 +119,19 @@ export default function ProposalDetailsPage() {
   };
 
   // Freelancer withdraw proposal
-  const handleWithdraw = async () => {
+  const handleConfirmWithdraw = async () => {
     if (!id) return;
-    const confirmed = window.confirm("Are you sure you want to withdraw this proposal?");
-    if (!confirmed) return;
 
     try {
+      setWithdrawing(true);
       await withdrawProposal(id);
       queryClient.invalidateQueries({ queryKey: ["proposals", "my"] });
+      setShowWithdrawConfirm(false);
       navigate("/my-proposals");
     } catch (error: any) {
       setFormError(error?.response?.data?.message || "Failed to withdraw proposal.");
+    } finally {
+      setWithdrawing(false);
     }
   };
 
@@ -400,7 +405,7 @@ export default function ProposalDetailsPage() {
                       type="button"
                       variant="danger"
                       size="md"
-                      onClick={handleWithdraw}
+                      onClick={() => setShowWithdrawConfirm(true)}
                     >
                       Withdraw Proposal
                     </Button>
@@ -415,6 +420,19 @@ export default function ProposalDetailsPage() {
           )}
         </CardBody>
       </Card>
+
+      {/* Confirmation Dialog for Freelancer Proposal Withdrawal */}
+      <ConfirmDialog
+        open={showWithdrawConfirm}
+        title="Withdraw Proposal"
+        message="Are you sure you want to withdraw this proposal? You can re-submit if the job remains open."
+        confirmLabel="Withdraw Proposal"
+        cancelLabel="Keep Proposal"
+        variant="danger"
+        isLoading={withdrawing}
+        onConfirm={handleConfirmWithdraw}
+        onCancel={() => setShowWithdrawConfirm(false)}
+      />
 
       {/* Confirmation Modal for Client Contract Creation */}
       {showAcceptModal && (

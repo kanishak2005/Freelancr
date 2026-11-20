@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { disputesApi, type Dispute } from "../services/operations.api";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -38,7 +39,7 @@ export default function AdminDisputesPage() {
     if (!selectedDispute) return;
 
     if (!resolutionNotes.trim()) {
-      alert("Resolution notes are required for administrative audit trail.");
+      toast.error("Resolution notes are required for administrative audit trail.");
       return;
     }
 
@@ -49,11 +50,12 @@ export default function AdminDisputesPage() {
         resolution: resolutionChoice,
         resolutionNotes,
       });
+      toast.success("Dispute resolved successfully.");
       setSelectedDispute(null);
       setResolutionNotes("");
       await loadDisputes();
     } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || "Failed to resolve dispute.");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to resolve dispute.");
     } finally {
       setActionLoading(false);
     }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   getMyProposals,
   withdrawProposal,
@@ -10,12 +11,14 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { Card, CardBody } from "../components/ui/Card";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export default function MyProposalsPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [proposalToWithdraw, setProposalToWithdraw] = useState<Proposal | null>(null);
 
   const loadProposals = async () => {
     try {
@@ -36,11 +39,9 @@ export default function MyProposalsPage() {
     loadProposals();
   }, []);
 
-  const handleWithdraw = async (proposalId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to withdraw this proposal? You can re-submit if the job remains open."
-    );
-    if (!confirmed) return;
+  const handleConfirmWithdraw = async () => {
+    if (!proposalToWithdraw) return;
+    const proposalId = proposalToWithdraw._id;
 
     try {
       setWithdrawingId(proposalId);
@@ -48,8 +49,10 @@ export default function MyProposalsPage() {
       setProposals((current) =>
         current.filter((proposal) => proposal._id !== proposalId)
       );
+      toast.success("Proposal withdrawn successfully.");
+      setProposalToWithdraw(null);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to withdraw proposal.");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to withdraw proposal.");
     } finally {
       setWithdrawingId(null);
     }
@@ -191,7 +194,7 @@ export default function MyProposalsPage() {
                         size="sm"
                         className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                         isLoading={withdrawingId === proposal._id}
-                        onClick={() => handleWithdraw(proposal._id)}
+                        onClick={() => setProposalToWithdraw(proposal)}
                       >
                         Withdraw Bid
                       </Button>
@@ -203,6 +206,19 @@ export default function MyProposalsPage() {
           })}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(proposalToWithdraw)}
+        title="Withdraw Proposal"
+        message="Are you sure you want to withdraw this proposal? You can re-submit if the job remains open."
+        confirmLabel="Withdraw Proposal"
+        cancelLabel="Keep Proposal"
+        variant="danger"
+        isLoading={Boolean(withdrawingId)}
+        onConfirm={handleConfirmWithdraw}
+        onCancel={() => setProposalToWithdraw(null)}
+      />
     </main>
   );
 }

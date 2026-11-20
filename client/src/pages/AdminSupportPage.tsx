@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { supportApi, type SupportTicket } from "../services/operations.api";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -37,13 +38,14 @@ export default function AdminSupportPage() {
   const handleStatusUpdate = async (ticketId: string, newStatus: string) => {
     try {
       await supportApi.updateTicketStatus(ticketId, { status: newStatus });
+      toast.success("Ticket status updated successfully.");
       await loadTickets();
       if (selectedTicket?._id === ticketId) {
         const updated = await supportApi.getTicketById(ticketId);
         setSelectedTicket(updated.data);
       }
     } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || "Failed to update ticket status.");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to update ticket status.");
     }
   };
 
@@ -54,12 +56,13 @@ export default function AdminSupportPage() {
     try {
       setSubmittingReply(true);
       await supportApi.addReply(selectedTicket._id, { message: replyText });
+      toast.success("Support reply posted successfully.");
       setReplyText("");
       const updated = await supportApi.getTicketById(selectedTicket._id);
       setSelectedTicket(updated.data);
       await loadTickets();
     } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || "Failed to post support reply.");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to post support reply.");
     } finally {
       setSubmittingReply(false);
     }

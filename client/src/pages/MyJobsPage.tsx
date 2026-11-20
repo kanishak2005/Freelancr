@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { deleteJob, getMyJobs, type Job } from "../services/jobs.api";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { Card, CardBody } from "../components/ui/Card";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export default function MyJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
 
   const loadJobs = async () => {
     try {
@@ -31,18 +34,18 @@ export default function MyJobsPage() {
     loadJobs();
   }, []);
 
-  const handleDelete = async (jobId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this job posting? This action cannot be undone."
-    );
-    if (!confirmed) return;
+  const handleConfirmDelete = async () => {
+    if (!jobToDelete) return;
+    const jobId = jobToDelete._id;
 
     try {
       setDeletingId(jobId);
       await deleteJob(jobId);
       setJobs((prev) => prev.filter((job) => job._id !== jobId));
+      toast.success("Job posting deleted successfully.");
+      setJobToDelete(null);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to delete job.");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to delete job.");
     } finally {
       setDeletingId(null);
     }
@@ -191,7 +194,7 @@ export default function MyJobsPage() {
                     variant="danger"
                     size="sm"
                     isLoading={deletingId === job._id}
-                    onClick={() => handleDelete(job._id)}
+                    onClick={() => setJobToDelete(job)}
                   >
                     Delete Listing
                   </Button>
@@ -201,6 +204,23 @@ export default function MyJobsPage() {
           ))}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(jobToDelete)}
+        title="Delete Job Posting"
+        message={
+          jobToDelete
+            ? `Are you sure you want to delete "${jobToDelete.title}"? This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete Job"
+        cancelLabel="Keep Job"
+        variant="danger"
+        isLoading={Boolean(deletingId)}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setJobToDelete(null)}
+      />
     </main>
   );
 }
