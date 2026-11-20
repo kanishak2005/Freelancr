@@ -56,3 +56,20 @@ Before writing any state-mutating endpoint (POST/PATCH/DELETE), verify:
 8. **Side-Effects:** Are notifications, socket events, or emails dispatched only AFTER successful database persistence?
 9. **Audit Trail:** Does the privileged or financial mutation record an entry via `AuditService.record`?
 10. **Sanitized Errors:** Do failure cases return clear HTTP status codes (`400`, `401`, `403`, `404`, `409`) without exposing internal stack traces?
+
+---
+
+## 4. Platform Commercial and Project-Engagement Boundary
+
+1. **Marketplace Responsibilities:**
+   Discovery, job posting, proposals, client-freelancer messaging, and the hiring handoff are official platform responsibilities.
+2. **Direct Engagement Execution:**
+   After hiring handoff, clients and freelancers independently manage their contracts, deliverables, project files, milestones, work, and project payments outside the platform.
+3. **No Custodial Escrow or Project Payouts:**
+   Do NOT implement, activate, or expand platform custodial project escrow, milestone fund releases, freelancer project payouts, wallet transfers, or project-payment commissions.
+4. **Platform Monetization Separation:**
+   Platform monetization must be treated separately from project payments. The approved monetization concept consists of client job-posting fees, subscriptions, and applicable statutory taxes. Implementation details require explicit owner-approved specifications.
+5. **No Historical PRD Authority for Financial Mutations:**
+   Never interpret historical PRDs (e.g. PRD 06, PRD 07, PRD 23) or existing legacy code as authorization to change financial or project-payment behavior.
+6. **Explicit Owner Authorization Required:**
+   Any modification to payment, order, webhook, refund, commission, wallet, payout, cashout, subscription, or fee logic requires separate explicit owner authorization.

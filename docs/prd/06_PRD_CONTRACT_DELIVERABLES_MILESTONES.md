@@ -1,5 +1,10 @@
 # PRD 06 — Contract Execution, Milestones, Deliverables, Approval & Timeline
 
+> [!WARNING] HISTORICAL / SUPERSEDED SPECIFICATION
+> This document describes an earlier platform-managed contract, milestone, and deliverable architecture. Under the current owner-approved Freelancr product model, project execution after hiring—including contracts, milestones, deliverables, project files, and project payments—is managed directly between clients and freelancers outside the platform.
+>
+> This document is retained for historical architectural context only. It is not authorization to implement or expand platform-managed project execution, milestone approval, escrow, or fund-release functionality.
+
 > **Project:** Freelancr  
 > **Audience:** Human developers and autonomous coding agents (including Antigravity-style agents).  
 > **Source basis:** `PROJECT_STRUCTURE.md`, `Freelancr_Complete_Project_Architecture.md`, `Freelancr_UI_UX_Production_Product_Analysis.md`.  

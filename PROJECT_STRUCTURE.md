@@ -240,7 +240,10 @@ Freelancr/
         │   │   ├── notification.types.ts # Notification types
         │   │   └── notification.validation.ts # Notification validation rules
         │   │
-        │   ├── payments/                 # Razorpay payment orders, webhook, and refunds
+        │   ├── payments/                 # Legacy financial subsystem (Mounted & exposed: Razorpay orders, webhooks, refunds, wallets, payouts)
+        │   │   # NOTE: Contains legacy contract escrow and payout functionality that remains mounted in app.ts.
+        │   │   # Under approved commercial rules, project payments are off-platform. Its existence and route exposure
+        │   │   # do NOT constitute approval for new financial implementation or activating custodial flows.
         │   │   ├── payment.controller.ts # Payment order, verification, webhook endpoints
         │   │   ├── payment.model.ts      # Mongoose schema for payments
         │   │   ├── payment.repository.ts # Payment database queries

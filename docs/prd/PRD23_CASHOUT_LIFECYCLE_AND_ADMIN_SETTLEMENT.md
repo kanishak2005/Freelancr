@@ -1,5 +1,10 @@
 # PRD 23 — Cashout Lifecycle and Admin Settlement Management Implementation Plan
 
+> [!WARNING] HISTORICAL / SUPERSEDED SPECIFICATION
+> This document describes an earlier platform-managed freelancer cashout and settlement lifecycle. The current approved product model does not include platform custodial freelancer balances or platform-managed project-payment cashouts.
+>
+> Retain this document for historical reference only. It must not be used as authorization to implement or expand wallet, cashout, bank settlement, or payout functionality.
+
 **Document Version**: 1.0.0  
 **Status**: DRAFT / SPECIFICATION ONLY (Phase 1)  
 **Author**: Antigravity Autonomous Security & Financial Systems Architect  

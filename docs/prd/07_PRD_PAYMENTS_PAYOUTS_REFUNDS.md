@@ -1,5 +1,10 @@
 # PRD 07 — Payments, Payouts, Refunds & Financial History
 
+> [!WARNING] HISTORICAL / SUPERSEDED FINANCIAL SPECIFICATION
+> This document describes an earlier custodial project-payment architecture involving escrow, platform-controlled payment processing, wallet balances, commissions on project payments, and freelancer payouts.
+>
+> The current approved project-engagement model requires clients and freelancers to handle project payments directly after hiring. This document is retained for historical reference only and does not authorize implementing, activating, or expanding escrow, wallet, payout, refund, or project-payment processing workflows.
+
 > **Project:** Freelancr  
 > **Audience:** Human developers and autonomous coding agents (including Antigravity-style agents).  
 > **Source basis:** `PROJECT_STRUCTURE.md`, `Freelancr_Complete_Project_Architecture.md`, `Freelancr_UI_UX_Production_Product_Analysis.md`.  

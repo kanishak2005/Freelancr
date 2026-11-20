@@ -16,6 +16,14 @@ Freelancr is a full-stack freelance marketplace that connects clients
 who publish jobs with freelancers who submit proposals and perform
 contracted work.
 
+> [!IMPORTANT]
+> ### Platform Commercial Boundary & Project-Engagement Architecture
+> Under the current owner-approved Freelancr product model:
+> 1. **Marketplace Scope:** User registration, onboarding, job discovery, job posting, proposals, messaging, and the hiring handoff take place on-platform.
+> 2. **Direct Engagement Model:** After the hiring handoff, clients and freelancers manage project execution, deliverables, milestones, files, work, and project payments directly and independently outside the platform.
+> 3. **Legacy Financial Subsystem Status:** The codebase contains an existing legacy financial subsystem (`server/src/modules/payments/`). As documented in the Phase 1J Task 3A source audit, these legacy routes (`/create-order`, `/verify`, `/webhook`, `/wallet`, `/payouts`, `/cashouts`) and their associated frontend pages (`/payments`, `/wallet`, `/admin/payouts`) remain mounted, exposed, and internally wired to contract completion events. This exposure represents a documented architectural discrepancy from prior phases—it does NOT constitute approval to continue, activate, or expand custodial project-payment workflows.
+> 4. **Future Migration:** Any future unmounting, decoupling, or removal of this legacy financial subsystem requires a separate owner-approved implementation plan.
+
 The platform implements the complete core marketplace lifecycle:
 
 ``` text

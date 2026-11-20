@@ -43,9 +43,11 @@ PRD 05: richer job cards, server filters/sorts, saved jobs, deterministic match 
 
 ### Phase 3 — Work lifecycle
 PRD 06: deliverables, milestones, approval/change-request, contract timeline, concurrency-safe transitions.
+> [!NOTE] HISTORICAL / SUPERSEDED MILESTONE: Under the current owner-approved product boundary, post-hire project execution (contracts, milestones, deliverables, files) is managed directly between clients and freelancers off-platform. This historical milestone is NOT active implementation authorization.
 
 ### Phase 4 — Money
 PRD 07: payment UX, payout entity/state, payout eligibility, admin payout operations, refund history, financial timeline.
+> [!NOTE] HISTORICAL / SUPERSEDED MILESTONE: Under the current owner-approved product boundary, project payments and freelancer payouts are handled directly off-platform. Discovery is a core platform capability. Platform monetization is addressed separately through client job-posting fees and subscriptions, together with applicable statutory taxes. Project payments between clients and freelancers remain off-platform. This historical milestone is NOT active implementation authorization.
 
 ### Phase 5 — Operations
 PRDs 08–09: chat/notification/upload hardening, support, disputes, audit logs, admin operations, system health.
