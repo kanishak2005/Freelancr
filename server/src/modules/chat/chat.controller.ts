@@ -41,6 +41,32 @@ export class ChatController {
     });
   }
 
+  static async getRecentConversations(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const conversations =
+      await ChatService.getRecentConversations(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      data: conversations,
+    });
+  }
+
+  static async getUnreadCount(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const unread =
+      await ChatService.getUnreadCount(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      data: unread,
+    });
+  }
+
   static async getMessage(
     req: AuthRequest,
     res: Response

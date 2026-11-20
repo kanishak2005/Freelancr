@@ -144,6 +144,21 @@ export class ChatService {
     );
   }
 
+  static async getRecentConversations(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new ApiError(HTTP_STATUS.BAD_REQUEST, "Invalid user ID");
+    }
+    return ChatRepository.getRecentConversations(userId);
+  }
+
+  static async getUnreadCount(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      return { count: 0 };
+    }
+    const count = await ChatRepository.getTotalUnreadCount(userId);
+    return { count };
+  }
+
   static async getMessage(
     id: string,
     userId: string

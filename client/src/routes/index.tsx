@@ -45,6 +45,8 @@ import AdminPayoutsPage from "../pages/AdminPayoutsPage";
 import AdminDisputesPage from "../pages/AdminDisputesPage";
 import AdminSupportPage from "../pages/AdminSupportPage";
 import AdminAuditLogsPage from "../pages/AdminAuditLogsPage";
+import AdminKnowledgeBasePage from "../pages/AdminKnowledgeBasePage";
+import AdminChatbotQuestionsPage from "../pages/AdminChatbotQuestionsPage";
 import FreelancerDashboardPage from "../pages/FreelancerDashboardPage";
 import FreelancerWalletPage from "../pages/FreelancerWalletPage";
 import PlatformFinancePage from "../pages/PlatformFinancePage";
@@ -184,6 +186,10 @@ export const router = createBrowserRouter([
             element: <FreelancerWalletPage />,
           },
           {
+            path: "/messages",
+            element: <ChatRoute />,
+          },
+          {
             path: "/chat/:userId",
             element: <ChatRoute />,
           },
@@ -221,6 +227,14 @@ export const router = createBrowserRouter([
               {
                 path: "/admin/support",
                 element: <AdminSupportPage />,
+              },
+              {
+                path: "/admin/knowledge-base",
+                element: <AdminKnowledgeBasePage />,
+              },
+              {
+                path: "/admin/chatbot-questions",
+                element: <AdminChatbotQuestionsPage />,
               },
               {
                 path: "/admin/audit",

@@ -20,6 +20,7 @@ import adminRoutes from "./modules/admin/admin.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
 import supportRoutes from "./modules/support/supportTicket.routes";
 import disputeRoutes from "./modules/disputes/dispute.routes";
+import knowledgeRoutes from "./modules/knowledge/knowledgeBase.routes";
 import mongoose from "mongoose";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { PaymentController } from "./modules/payments/payment.controller";
@@ -154,6 +155,7 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/support", supportRoutes);
 app.use("/api/v1/disputes", disputeRoutes);
+app.use("/api/v1/knowledge", knowledgeRoutes);
 
 // Kubernetes / Cloud Health Probes (PRD 09)
 app.get("/health/live", (_req, res) => {

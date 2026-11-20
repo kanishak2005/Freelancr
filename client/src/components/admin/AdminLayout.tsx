@@ -41,6 +41,8 @@ const ADMIN_NAVIGATION: NavGroup[] = [
     title: "Trust & Support",
     items: [
       { label: "Disputes", href: "/admin/disputes" },
+      { label: "Knowledge Base", href: "/admin/knowledge-base" },
+      { label: "Chatbot Questions", href: "/admin/chatbot-questions" },
       { label: "Support Tickets", href: "/admin/support" },
       { label: "Audit Logs", href: "/admin/audit" },
     ],

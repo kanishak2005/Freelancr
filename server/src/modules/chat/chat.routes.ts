@@ -21,6 +21,18 @@ router.post(
 );
 
 router.get(
+  "/conversations",
+  authenticate,
+  ChatController.getRecentConversations
+);
+
+router.get(
+  "/unread-count",
+  authenticate,
+  ChatController.getUnreadCount
+);
+
+router.get(
   "/conversation/:userId",
   authenticate,
   conversationUserIdValidation,

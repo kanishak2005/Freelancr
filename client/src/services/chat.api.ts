@@ -21,6 +21,32 @@ export interface ChatMessage {
   updatedAt: string;
 }
 
+export interface ConversationSummary {
+  _id: string; // Other participant userId
+  lastMessage: string;
+  lastMessageAt: string;
+  lastMessageId: string;
+  lastSender: string;
+  unreadCount: number;
+  participant: {
+    _id: string;
+    fullName: string;
+    username: string;
+    avatar?: string;
+    role?: string;
+  };
+}
+
+export const getRecentConversations = async (): Promise<ConversationSummary[]> => {
+  const response = await api.get("/chat/conversations");
+  return response.data.data as ConversationSummary[];
+};
+
+export const getUnreadChatCount = async (): Promise<number> => {
+  const response = await api.get("/chat/unread-count");
+  return response.data.data.count as number;
+};
+
 export const getConversation = async (
   userId: string,
   params?: { cursor?: string; limit?: number }

@@ -10,6 +10,7 @@ import { NotificationBell } from "../components/notifications/NotificationBell";
 import { Badge } from "../components/ui/Badge";
 import { DashboardSidebar } from "../components/navigation/DashboardSidebar";
 import { getRoleNavigation } from "../components/navigation/navigationConfig";
+import FloatingChatbot from "../components/chatbot/FloatingChatbot";
 
 export default function MainLayout() {
   const navigate = useNavigate();
@@ -190,6 +191,9 @@ export default function MainLayout() {
             </div>
           </div>
         </footer>
+
+        {/* Floating Local Support Chatbot */}
+        <FloatingChatbot />
       </div>
     </div>
   );

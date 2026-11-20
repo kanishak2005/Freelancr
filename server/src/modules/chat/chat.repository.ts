@@ -94,6 +94,94 @@ export class ChatRepository {
     );
   }
 
+  static async getRecentConversations(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      return [];
+    }
+
+    const userObjId = new Types.ObjectId(userId);
+
+    // Aggregate unique conversation partners and retrieve last message + unread count
+    const summary = await Chat.aggregate([
+      {
+        $match: {
+          $or: [{ sender: userObjId }, { receiver: userObjId }],
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $group: {
+          _id: {
+            $cond: [{ $eq: ["$sender", userObjId] }, "$receiver", "$sender"],
+          },
+          lastMessage: { $first: "$message" },
+          lastMessageAt: { $first: "$createdAt" },
+          lastMessageId: { $first: "$_id" },
+          lastSender: { $first: "$sender" },
+          unreadCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$receiver", userObjId] },
+                    { $eq: ["$isRead", false] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $sort: { lastMessageAt: -1 },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "participant",
+        },
+      },
+      {
+        $unwind: "$participant",
+      },
+      {
+        $project: {
+          _id: 1,
+          lastMessage: 1,
+          lastMessageAt: 1,
+          lastMessageId: 1,
+          lastSender: 1,
+          unreadCount: 1,
+          participant: {
+            _id: "$participant._id",
+            fullName: "$participant.fullName",
+            username: "$participant.username",
+            avatar: "$participant.avatar",
+            role: "$participant.role",
+          },
+        },
+      },
+    ]);
+
+    return summary;
+  }
+
+  static async getTotalUnreadCount(userId: string): Promise<number> {
+    if (!Types.ObjectId.isValid(userId)) {
+      return 0;
+    }
+    return Chat.countDocuments({
+      receiver: new Types.ObjectId(userId),
+      isRead: false,
+    });
+  }
+
   static async delete(id: string) {
     if (!Types.ObjectId.isValid(id)) {
       return null;

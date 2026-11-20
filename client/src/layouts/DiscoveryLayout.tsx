@@ -3,6 +3,7 @@ import { useAppSelector } from "../store/hooks";
 import MainLayout from "../layouts/MainLayout";
 import PublicNavbar from "../components/navigation/PublicNavbar";
 import PublicFooter from "../components/navigation/PublicFooter";
+import FloatingChatbot from "../components/chatbot/FloatingChatbot";
 
 /**
  * DiscoveryLayout handles routes like /jobs and /jobs/:id that can be viewed
@@ -25,6 +26,7 @@ export default function DiscoveryLayout() {
         <Outlet />
       </div>
       <PublicFooter />
+      <FloatingChatbot />
     </div>
   );
 }
