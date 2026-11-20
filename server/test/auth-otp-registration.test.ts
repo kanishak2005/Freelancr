@@ -195,13 +195,32 @@ describe("Phase 1A: Secure Email OTP Registration Test Suite", () => {
     it("enforces 60s cooldown if resendAvailableAt is in the future", async () => {
       const origFindByEmail = UserRepository.findByEmail;
       const origFindByEmailAndType = EmailVerificationRepository.findByEmailAndType;
+      const OrigDate = global.Date;
 
+      const frozenTimeMs = 1700000000000; // Fixed deterministic timestamp
+
+      // Create a deterministic Date mock that returns fixed frozen time
+      class MockDate extends OrigDate {
+        constructor(...args: any[]) {
+          if (args.length === 0) {
+            super(frozenTimeMs);
+          } else {
+            // @ts-ignore
+            super(...args);
+          }
+        }
+        static override now() {
+          return frozenTimeMs;
+        }
+      }
+
+      global.Date = MockDate as any;
       UserRepository.findByEmail = async () => null;
       EmailVerificationRepository.findByEmailAndType = async () => {
         return {
           email: "cooldown@example.com",
           dispatchStatus: "sent",
-          resendAvailableAt: new Date(Date.now() + 45000), // 45s left
+          resendAvailableAt: new OrigDate(frozenTimeMs + 45000), // Exactly 45000ms left
           dispatchVersion: 1,
           dispatchAttempts: [],
         } as any;
@@ -214,11 +233,93 @@ describe("Phase 1A: Secure Email OTP Registration Test Suite", () => {
           },
           (err: any) => {
             assert.equal(err.statusCode, 429);
-            assert.match(err.message, /wait 45s/i);
+            // Deterministically exactly 45s (Math.ceil(45000 / 1000) === 45)
+            assert.equal(
+              err.message,
+              "Please wait 45s before requesting another verification code."
+            );
             return true;
           }
         );
       } finally {
+        global.Date = OrigDate;
+        UserRepository.findByEmail = origFindByEmail;
+        EmailVerificationRepository.findByEmailAndType = origFindByEmailAndType;
+      }
+    });
+
+    it("verifies exact cooldown boundary transitions (44999ms -> 45s, 45001ms -> 46s)", async () => {
+      const origFindByEmail = UserRepository.findByEmail;
+      const origFindByEmailAndType = EmailVerificationRepository.findByEmailAndType;
+      const OrigDate = global.Date;
+
+      const frozenTimeMs = 1700000000000;
+
+      class MockDate extends OrigDate {
+        constructor(...args: any[]) {
+          if (args.length === 0) {
+            super(frozenTimeMs);
+          } else {
+            // @ts-ignore
+            super(...args);
+          }
+        }
+        static override now() {
+          return frozenTimeMs;
+        }
+      }
+
+      global.Date = MockDate as any;
+      UserRepository.findByEmail = async () => null;
+
+      try {
+        // 1 ms below 45s boundary (44999ms) -> Math.ceil(44.999) = 45s
+        EmailVerificationRepository.findByEmailAndType = async () => ({
+          email: "cooldown@example.com",
+          dispatchStatus: "sent",
+          resendAvailableAt: new OrigDate(frozenTimeMs + 44999),
+          dispatchVersion: 1,
+          dispatchAttempts: [],
+        }) as any;
+
+        await assert.rejects(
+          async () => {
+            await AuthService.sendRegistrationOtp({ email: "cooldown@example.com" });
+          },
+          (err: any) => {
+            assert.equal(err.statusCode, 429);
+            assert.equal(
+              err.message,
+              "Please wait 45s before requesting another verification code."
+            );
+            return true;
+          }
+        );
+
+        // 1 ms above 45s boundary (45001ms) -> Math.ceil(45.001) = 46s
+        EmailVerificationRepository.findByEmailAndType = async () => ({
+          email: "cooldown@example.com",
+          dispatchStatus: "sent",
+          resendAvailableAt: new OrigDate(frozenTimeMs + 45001),
+          dispatchVersion: 1,
+          dispatchAttempts: [],
+        }) as any;
+
+        await assert.rejects(
+          async () => {
+            await AuthService.sendRegistrationOtp({ email: "cooldown@example.com" });
+          },
+          (err: any) => {
+            assert.equal(err.statusCode, 429);
+            assert.equal(
+              err.message,
+              "Please wait 46s before requesting another verification code."
+            );
+            return true;
+          }
+        );
+      } finally {
+        global.Date = OrigDate;
         UserRepository.findByEmail = origFindByEmail;
         EmailVerificationRepository.findByEmailAndType = origFindByEmailAndType;
       }
