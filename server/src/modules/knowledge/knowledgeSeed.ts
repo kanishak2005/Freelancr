@@ -1,5 +1,4 @@
 import { KnowledgeBaseEntry } from "./knowledgeBase.model";
-import { User } from "../users/user.model";
 
 /**
  * Seed initial published FAQs into the local database if none exist yet.
@@ -9,12 +8,6 @@ import { User } from "../users/user.model";
  */
 export async function seedInitialKnowledgeBase() {
   try {
-    let admin = await User.findOne({ role: "admin" });
-    if (!admin) {
-      admin = await User.findOne({});
-    }
-    if (!admin) return;
-
     const initialEntries = [
       {
         canonicalQuestion: "How do I apply for a job?",
@@ -27,7 +20,6 @@ export async function seedInitialKnowledgeBase() {
         category: "proposals",
         answer: "To apply for a job, navigate to 'Find Jobs' from your dashboard sidebar, select an open job opportunity, review the requirements and budget, then click 'Submit Proposal' to enter your bid amount, delivery timeline, and cover letter.",
         status: "published",
-        createdBy: admin._id,
       },
       {
         canonicalQuestion: "How do I post a new job?",
@@ -40,7 +32,6 @@ export async function seedInitialKnowledgeBase() {
         category: "jobs",
         answer: "Clients can post jobs by clicking the 'Post Job' button in the top navigation or navigating to 'Post a New Job' (/jobs/create) in their sidebar. Specify project title, required skills, budget range or fixed price, and whether the job is remote.",
         status: "published",
-        createdBy: admin._id,
       },
       {
         canonicalQuestion: "Where can I find my messages?",
@@ -53,7 +44,6 @@ export async function seedInitialKnowledgeBase() {
         category: "messages",
         answer: "You can access your messages anytime by clicking 'Messages' in your dashboard sidebar. There you can view active conversations, check message history, and compose real-time messages with clients and freelancers.",
         status: "published",
-        createdBy: admin._id,
       },
       {
         canonicalQuestion: "How do I update my profile?",
@@ -66,7 +56,6 @@ export async function seedInitialKnowledgeBase() {
         category: "profile",
         answer: "You can update your skills, bio, portfolio projects, and availability during onboarding or from your account dashboard. Ensure your contact details and skills stay current to maximize job matching.",
         status: "published",
-        createdBy: admin._id,
       },
       {
         canonicalQuestion: "How do I review proposals?",
@@ -79,7 +68,6 @@ export async function seedInitialKnowledgeBase() {
         category: "proposals",
         answer: "Clients can review incoming proposals by navigating to 'My Posted Jobs' (/my-jobs) and clicking 'Review Proposals' on any active listing. From there, you can view applicant profiles, read cover letters, and accept a proposal to connect directly with the freelancer and arrange your project terms independently.",
         status: "published",
-        createdBy: admin._id,
       },
       {
         canonicalQuestion: "How do I contact support?",
@@ -92,7 +80,6 @@ export async function seedInitialKnowledgeBase() {
         category: "support",
         answer: "You can ask questions right here in Freelancr Help! If your question cannot be answered automatically, you can click 'Submit to Support Team' to escalate it, or submit a formal ticket via the platform support desk.",
         status: "published",
-        createdBy: admin._id,
       },
       {
         canonicalQuestion: "What are the platform fees and payment terms?",
@@ -105,7 +92,6 @@ export async function seedInitialKnowledgeBase() {
         category: "payments",
         answer: "Platform revenue is generated through subscriptions and a 10% client job-posting fee plus statutory taxes. Clients and freelancers independently manage their agreements, milestones, and deliverables.",
         status: "published",
-        createdBy: admin._id,
       },
     ];
 
@@ -135,6 +121,7 @@ export async function seedInitialKnowledgeBase() {
     }
   } catch (err) {
     console.error("Knowledge base initial seed error:", err);
+    throw err;
   }
 }
 

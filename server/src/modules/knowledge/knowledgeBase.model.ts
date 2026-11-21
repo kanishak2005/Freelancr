@@ -23,7 +23,7 @@ export interface IKnowledgeBaseEntry extends Document {
   status: KnowledgeStatus;
   viewCount: number;
   helpfulCount: number;
-  createdBy: Types.ObjectId;
+  createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -93,7 +93,6 @@ const knowledgeBaseEntrySchema = new Schema<IKnowledgeBaseEntry>(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
     updatedBy: {
       type: Schema.Types.ObjectId,

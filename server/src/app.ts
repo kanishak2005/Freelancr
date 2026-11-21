@@ -93,6 +93,31 @@ const ensureFreelancrDatabaseConnection = async (): Promise<void> => {
   }
 };
 
+// Cached knowledge-base initialization promise across serverless warm requests
+let knowledgeBaseInitializationPromise: Promise<void> | null = null;
+
+export const ensureKnowledgeBaseInitialized = async (): Promise<void> => {
+  if (knowledgeBaseInitializationPromise) {
+    return knowledgeBaseInitializationPromise;
+  }
+
+  const initAttempt = (async () => {
+    await ensureFreelancrDatabaseConnection();
+    const { seedInitialKnowledgeBase } = await import("./modules/knowledge/knowledgeSeed.js");
+    await seedInitialKnowledgeBase();
+  })();
+
+  knowledgeBaseInitializationPromise = initAttempt;
+
+  try {
+    await initAttempt;
+  } catch (err) {
+    // If initialization fails, reset the cached promise so subsequent requests can retry
+    knowledgeBaseInitializationPromise = null;
+    throw err;
+  }
+};
+
 const databaseExemptPaths = new Set([
   "/",
   "/api/v1/health",
@@ -118,6 +143,7 @@ app.use(async (req, _res, next) => {
 
   try {
     await ensureFreelancrDatabaseConnection();
+    await ensureKnowledgeBaseInitialized();
     return next();
   } catch (error) {
     console.error(
