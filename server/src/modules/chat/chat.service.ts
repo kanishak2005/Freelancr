@@ -1,5 +1,6 @@
 import { ChatRepository } from "./chat.repository";
 import { UserRepository } from "../users/user.repository";
+import { ContractRepository } from "../contracts/contract.repository";
 import { ApiError, HTTP_STATUS } from "../../shared";
 import { Types } from "mongoose";
 
@@ -240,5 +241,63 @@ export class ChatService {
     return {
       message: "Message deleted successfully",
     };
+  }
+
+  static async getWorkPartners(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new ApiError(
+        HTTP_STATUS.UNAUTHORIZED,
+        "Invalid user identity"
+      );
+    }
+
+    const contracts =
+      await ContractRepository.findQualifyingContractsForUser(userId);
+
+    const partnerMap = new Map<string, {
+      _id: string;
+      fullName: string;
+      username: string;
+      avatar: string;
+      role: string;
+      latestContractStatus: string;
+      latestContractTitle: string;
+    }>();
+
+    for (const contract of contracts) {
+      const clientObj = contract.client as any;
+      const freelancerObj = contract.freelancer as any;
+
+      if (!clientObj || !freelancerObj) continue;
+
+      const clientId = clientObj._id ? clientObj._id.toString() : clientObj.toString();
+      const freelancerId = freelancerObj._id ? freelancerObj._id.toString() : freelancerObj.toString();
+
+      const isClient = clientId === userId;
+      const counterparty = isClient ? freelancerObj : clientObj;
+
+      if (!counterparty || typeof counterparty !== "object") continue;
+
+      const counterpartyId = counterparty._id ? counterparty._id.toString() : "";
+      if (!counterpartyId || counterpartyId === userId) continue;
+
+      // Exclude inactive counterparties
+      if (counterparty.isActive === false) continue;
+
+      // Deduplicate: preserve the first occurrence (which is the latest due to sorting by updatedAt: -1)
+      if (!partnerMap.has(counterpartyId)) {
+        partnerMap.set(counterpartyId, {
+          _id: counterpartyId,
+          fullName: counterparty.fullName || "",
+          username: counterparty.username || "",
+          avatar: counterparty.avatar || "",
+          role: counterparty.role || (isClient ? "freelancer" : "client"),
+          latestContractStatus: contract.status,
+          latestContractTitle: contract.title || "",
+        });
+      }
+    }
+
+    return Array.from(partnerMap.values());
   }
 }

@@ -399,4 +399,24 @@ export class ContractRepository {
       }
     );
   }
+
+  static async findQualifyingContractsForUser(userId: string) {
+    return Contract.find({
+      $or: [
+        { client: userId },
+        { freelancer: userId },
+      ],
+      status: { $in: ["active", "completed"] },
+    })
+      .select("client freelancer status title updatedAt createdAt")
+      .populate({
+        path: "client",
+        select: "fullName username avatar role isActive",
+      })
+      .populate({
+        path: "freelancer",
+        select: "fullName username avatar role isActive",
+      })
+      .sort({ updatedAt: -1, createdAt: -1 });
+  }
 }

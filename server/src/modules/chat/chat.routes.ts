@@ -27,6 +27,12 @@ router.get(
 );
 
 router.get(
+  "/partners",
+  authenticate,
+  ChatController.getWorkPartners
+);
+
+router.get(
   "/unread-count",
   authenticate,
   ChatController.getUnreadCount

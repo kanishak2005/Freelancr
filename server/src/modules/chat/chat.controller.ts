@@ -54,6 +54,19 @@ export class ChatController {
     });
   }
 
+  static async getWorkPartners(
+    req: AuthRequest,
+    res: Response
+  ) {
+    const partners =
+      await ChatService.getWorkPartners(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      data: partners,
+    });
+  }
+
   static async getUnreadCount(
     req: AuthRequest,
     res: Response

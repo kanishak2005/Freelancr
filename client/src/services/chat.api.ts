@@ -37,9 +37,24 @@ export interface ConversationSummary {
   };
 }
 
+export interface WorkPartner {
+  _id: string;
+  fullName: string;
+  username: string;
+  avatar: string;
+  role: string;
+  latestContractStatus: "active" | "completed" | string;
+  latestContractTitle: string;
+}
+
 export const getRecentConversations = async (): Promise<ConversationSummary[]> => {
   const response = await api.get("/chat/conversations");
   return response.data.data as ConversationSummary[];
+};
+
+export const getWorkPartners = async (): Promise<WorkPartner[]> => {
+  const response = await api.get("/chat/partners");
+  return response.data.data as WorkPartner[];
 };
 
 export const getUnreadChatCount = async (): Promise<number> => {

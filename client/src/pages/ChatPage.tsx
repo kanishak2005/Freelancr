@@ -4,11 +4,13 @@ import toast from "react-hot-toast";
 import { socket } from "../lib/socket";
 import {
   getRecentConversations,
+  getWorkPartners,
   getConversation,
   deleteMessage,
   sendMessage,
   type ChatMessage,
   type ConversationSummary,
+  type WorkPartner,
 } from "../services/chat.api";
 import { useAppSelector } from "../store/hooks";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -24,6 +26,7 @@ export default function ChatPage({ userId: propUserId }: ChatPageProps = {}) {
   const currentUser = useAppSelector((state) => state.auth.user);
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [workPartners, setWorkPartners] = useState<WorkPartner[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>(activeUserId || "");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
@@ -43,16 +46,28 @@ export default function ChatPage({ userId: propUserId }: ChatPageProps = {}) {
     }
   }, [activeUserId]);
 
-  // Load conversation list
+  // Load conversation list and work partners in parallel
   const loadConversations = async () => {
     try {
       setLoadingConversations(true);
-      const list = await getRecentConversations();
-      setConversations(list);
+      const [listResult, partnersResult] = await Promise.allSettled([
+        getRecentConversations(),
+        getWorkPartners(),
+      ]);
 
-      // If no route user was selected, select the first conversation automatically on desktop
-      if (!activeUserId && list.length > 0 && !selectedUserId) {
-        setSelectedUserId(list[0]._id);
+      const list = listResult.status === "fulfilled" ? listResult.value : [];
+      const partners = partnersResult.status === "fulfilled" ? partnersResult.value : [];
+
+      setConversations(list);
+      setWorkPartners(partners);
+
+      // If no route user was selected, select the first conversation or first partner automatically on desktop
+      if (!activeUserId && !selectedUserId) {
+        if (list.length > 0) {
+          setSelectedUserId(list[0]._id);
+        } else if (partners.length > 0) {
+          setSelectedUserId(partners[0]._id);
+        }
       }
     } catch (err) {
       console.error("Failed to load conversations:", err);
@@ -214,7 +229,27 @@ export default function ChatPage({ userId: propUserId }: ChatPageProps = {}) {
     );
   });
 
-  const selectedParticipant = conversations.find((c) => c._id === selectedUserId)?.participant;
+  // Filter unmessaged work partners (those who do not already have an entry in conversations)
+  const existingConversationUserIds = new Set(conversations.map((c) => c._id));
+  const unmessagedPartners = workPartners.filter(
+    (p) => !existingConversationUserIds.has(p._id)
+  );
+
+  const filteredPartners = unmessagedPartners.filter((p) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.fullName.toLowerCase().includes(q) ||
+      p.username.toLowerCase().includes(q) ||
+      p.latestContractTitle.toLowerCase().includes(q)
+    );
+  });
+
+  const selectedParticipant =
+    conversations.find((c) => c._id === selectedUserId)?.participant ||
+    workPartners.find((p) => p._id === selectedUserId);
+
+  const totalContactsCount = filteredConversations.length + filteredPartners.length;
 
   return (
     <div className="h-[calc(100vh-130px)] min-h-[500px] flex rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
@@ -229,7 +264,7 @@ export default function ChatPage({ userId: propUserId }: ChatPageProps = {}) {
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-lg font-bold text-slate-900">Messages</h1>
             <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-              {conversations.length} Active
+              {conversations.length + unmessagedPartners.length} Contacts
             </span>
           </div>
 
@@ -238,7 +273,7 @@ export default function ChatPage({ userId: propUserId }: ChatPageProps = {}) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search conversations..."
+              placeholder="Search conversations & partners..."
               className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-100 outline-none transition"
             />
             <svg
@@ -255,55 +290,119 @@ export default function ChatPage({ userId: propUserId }: ChatPageProps = {}) {
         {/* Conversations Scroll Area */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
           {loadingConversations ? (
-            <div className="p-6 text-center text-xs text-slate-400">Loading conversations...</div>
-          ) : filteredConversations.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-400">Loading conversations & partners...</div>
+          ) : totalContactsCount === 0 ? (
             <div className="p-8 text-center text-xs text-slate-400">
-              {searchQuery ? "No matching conversations found." : "No messages yet. Active proposals & contracts allow communication."}
+              {searchQuery
+                ? "No matching conversations or work partners found."
+                : "No conversations or contract partners yet. Active proposals & contracts allow communication."}
             </div>
           ) : (
-            filteredConversations.map((conv) => {
-              const isSelected = conv._id === selectedUserId;
-              return (
-                <button
-                  key={conv._id}
-                  onClick={() => handleSelectConversation(conv._id)}
-                  className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
-                    isSelected ? "bg-indigo-50/70 border-l-4 border-indigo-600" : "hover:bg-slate-100/60"
-                  }`}
-                >
-                  <div className="relative shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-                      {conv.participant.avatar ? (
-                        <img
-                          src={conv.participant.avatar}
-                          alt={conv.participant.fullName}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        conv.participant.fullName.charAt(0).toUpperCase()
+            <>
+              {/* Recent Conversations */}
+              {filteredConversations.map((conv) => {
+                const isSelected = conv._id === selectedUserId;
+                return (
+                  <button
+                    key={conv._id}
+                    onClick={() => handleSelectConversation(conv._id)}
+                    className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
+                      isSelected ? "bg-indigo-50/70 border-l-4 border-indigo-600" : "hover:bg-slate-100/60"
+                    }`}
+                  >
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+                        {conv.participant.avatar ? (
+                          <img
+                            src={conv.participant.avatar}
+                            alt={conv.participant.fullName}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          conv.participant.fullName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      {conv.unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                          {conv.unreadCount}
+                        </span>
                       )}
                     </div>
-                    {conv.unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
-                        {conv.unreadCount}
-                      </span>
-                    )}
-                  </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-bold text-slate-900 truncate">
-                        {conv.participant.fullName}
-                      </span>
-                      <span className="text-[10px] text-slate-400 shrink-0">
-                        {formatTimestamp(conv.lastMessageAt)}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-bold text-slate-900 truncate">
+                          {conv.participant.fullName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 shrink-0">
+                          {formatTimestamp(conv.lastMessageAt)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate">{conv.lastMessage}</p>
                     </div>
-                    <p className="text-xs text-slate-500 truncate">{conv.lastMessage}</p>
+                  </button>
+                );
+              })}
+
+              {/* Work Partners (from active or completed contracts without existing chat thread) */}
+              {filteredPartners.length > 0 && (
+                <div>
+                  <div className="px-4 py-2 bg-slate-100/70 border-t border-b border-slate-200/60 text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                    <span>Work Partners</span>
+                    <span className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.2 rounded-full font-medium text-slate-600">
+                      {filteredPartners.length}
+                    </span>
                   </div>
-                </button>
-              );
-            })
+                  {filteredPartners.map((partner) => {
+                    const isSelected = partner._id === selectedUserId;
+                    const isActiveContract = partner.latestContractStatus === "active";
+                    return (
+                      <button
+                        key={partner._id}
+                        onClick={() => handleSelectConversation(partner._id)}
+                        className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
+                          isSelected ? "bg-indigo-50/70 border-l-4 border-indigo-600" : "hover:bg-slate-100/60"
+                        }`}
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+                            {partner.avatar ? (
+                              <img
+                                src={partner.avatar}
+                                alt={partner.fullName}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              partner.fullName.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-bold text-slate-900 truncate">
+                              {partner.fullName}
+                            </span>
+                            <span
+                              className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 border ${
+                                isActiveContract
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : "bg-slate-100 text-slate-600 border-slate-200"
+                              }`}
+                            >
+                              {isActiveContract ? "Active Contract" : "Completed"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 truncate">
+                            {partner.latestContractTitle || "Click to start conversation"}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
