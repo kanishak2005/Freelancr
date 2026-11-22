@@ -4,6 +4,49 @@ import { supportApi, type SupportTicket } from "../services/operations.api";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 
+/**
+ * Checks whether a subject is a known generic historical placeholder.
+ */
+function isGenericSubject(subject: string): boolean {
+  if (!subject) return true;
+  const s = subject.trim().toLowerCase();
+  return (
+    s === "marketplace question" ||
+    s === "chatbot inquiry: marketplace question" ||
+    s === "support request" ||
+    s === "chatbot inquiry: support request" ||
+    s === "chatbot inquiry:"
+  );
+}
+
+/**
+ * Extracts a meaningful visible problem summary from description if the subject is generic.
+ */
+function getDisplaySubject(ticket: SupportTicket): { title: string; isGeneric: boolean; originalSubject: string } {
+  if (!isGenericSubject(ticket.subject)) {
+    return { title: ticket.subject, isGeneric: false, originalSubject: ticket.subject };
+  }
+
+  // Attempt to extract from structured description
+  const desc = ticket.description || "";
+  const inquiryMatch = desc.match(/--- User Inquiry ---\s*\n([\s\S]*?)(?=\n---|\n===|$)/);
+  if (inquiryMatch && inquiryMatch[1]?.trim()) {
+    const prompt = inquiryMatch[1].trim().replace(/\s+/g, " ");
+    const summary = prompt.length > 80 ? prompt.slice(0, 77) + "..." : prompt;
+    return { title: summary, isGeneric: true, originalSubject: ticket.subject };
+  }
+
+  // Fallback to first non-empty line of description
+  const firstLine = desc.split("\n").find((l) => l.trim() && !l.startsWith("===") && !l.startsWith("---"));
+  if (firstLine && firstLine.trim()) {
+    const clean = firstLine.trim().replace(/\s+/g, " ");
+    const summary = clean.length > 80 ? clean.slice(0, 77) + "..." : clean;
+    return { title: summary, isGeneric: true, originalSubject: ticket.subject };
+  }
+
+  return { title: ticket.subject || "Support Inquiry", isGeneric: false, originalSubject: ticket.subject };
+}
+
 export default function AdminSupportPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,61 +175,69 @@ export default function AdminSupportPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {tickets.map((t) => (
-                  <tr key={t._id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">{t.subject}</div>
-                      <div className="text-xs text-slate-500 uppercase font-mono">{t.category}</div>
-                    </td>
-                    <td className="px-6 py-4 text-xs">
-                      <div className="font-medium text-slate-800">{t.user?.fullName}</div>
-                      <div className="text-slate-500 font-mono">@{t.user?.username} ({t.user?.role})</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          t.priority === "urgent"
-                            ? "bg-rose-100 text-rose-800"
-                            : t.priority === "high"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}
-                      >
-                        {t.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge
-                        variant={
-                          t.status === "open"
-                            ? "warning"
-                            : t.status === "resolved"
-                            ? "success"
-                            : "primary"
-                        }
-                        size="sm"
-                      >
-                        {t.status.replace(/_/g, " ")}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {new Date(t.createdAt).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setSelectedTicket(t)}
-                      >
-                        Manage Ticket
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {tickets.map((t) => {
+                  const display = getDisplaySubject(t);
+                  return (
+                    <tr key={t._id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900">{display.title}</div>
+                        {display.isGeneric && (
+                          <div className="text-[11px] text-amber-700 italic">
+                            Stored Subject: {display.originalSubject}
+                          </div>
+                        )}
+                        <div className="text-xs text-slate-500 uppercase font-mono">{t.category}</div>
+                      </td>
+                      <td className="px-6 py-4 text-xs">
+                        <div className="font-medium text-slate-800">{t.user?.fullName}</div>
+                        <div className="text-slate-500 font-mono">@{t.user?.username} ({t.user?.role})</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            t.priority === "urgent"
+                              ? "bg-rose-100 text-rose-800"
+                              : t.priority === "high"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          {t.priority}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge
+                          variant={
+                            t.status === "open"
+                              ? "warning"
+                              : t.status === "resolved"
+                              ? "success"
+                              : "primary"
+                          }
+                          size="sm"
+                        >
+                          {t.status.replace(/_/g, " ")}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-500">
+                        {new Date(t.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setSelectedTicket(t)}
+                        >
+                          Manage Ticket
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -194,14 +245,21 @@ export default function AdminSupportPage() {
       </div>
 
       {/* Ticket Management Modal */}
-      {selectedTicket && (
+      {selectedTicket && (() => {
+        const modalDisplay = getDisplaySubject(selectedTicket);
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
           <div className="max-w-2xl w-full rounded-2xl bg-white p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">{selectedTicket.subject}</h3>
+                <h3 className="text-lg font-bold text-slate-900">{modalDisplay.title}</h3>
+                {modalDisplay.isGeneric && (
+                  <div className="text-xs text-amber-700 italic">
+                    Original Database Subject: {modalDisplay.originalSubject}
+                  </div>
+                )}
                 <span className="text-xs text-slate-500">
-                  By {selectedTicket.user?.fullName} • Category: {selectedTicket.category}
+                  By {selectedTicket.user?.fullName} (@{selectedTicket.user?.username}) • Role: {selectedTicket.user?.role} • Category: {selectedTicket.category}
                 </span>
               </div>
               <button
@@ -284,7 +342,8 @@ export default function AdminSupportPage() {
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

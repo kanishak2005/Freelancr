@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   knowledgeApi,
   type ChatbotEscalationItem,
@@ -66,6 +66,29 @@ export default function AdminChatbotQuestionsPage() {
             Questions asked by marketplace users that had low deterministic confidence scores or were flagged for support escalation.
           </p>
         </div>
+      </div>
+
+      {/* Support Desk Routing Notice */}
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 text-xs text-indigo-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 font-semibold text-indigo-950">
+            <svg className="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>FAQ Knowledge-Gap Review Only</span>
+          </div>
+          <p className="text-indigo-800">
+            This queue is exclusively for auditing unanswered chatbot questions to expand public Knowledge Base FAQs.
+            Customer complaints and official support tickets are managed separately with direct reply capabilities in the Support Desk.
+          </p>
+        </div>
+        <Link
+          to="/admin/support"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs shadow-xs transition"
+        >
+          <span>Open Support Desk</span>
+          <span>→</span>
+        </Link>
       </div>
 
       {/* Filter Tabs */}
