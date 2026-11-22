@@ -1,24 +1,89 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   knowledgeApi,
   type ChatbotResponse,
   type SuggestedQuestion,
 } from "../../services/knowledge.api";
+import { supportApi } from "../../services/operations.api";
+import { useAppSelector } from "../../store/hooks";
 
 interface ChatMessage {
   id: string;
   sender: "bot" | "user";
   text: string;
+  userPrompt?: string; // Original user prompt that triggered this message/response
   answer?: ChatbotResponse;
+  ticketId?: string; // Set when an official support ticket is created
   timestamp: Date;
 }
 
+export type SupportTicketCategory = "account" | "billing" | "contract" | "technical" | "other";
+
+export function mapToTicketCategory(rawCategory?: string): SupportTicketCategory {
+  if (!rawCategory) return "other";
+  const cat = rawCategory.toLowerCase().trim();
+  if (cat.includes("bill") || cat.includes("pay") || cat.includes("escrow")) return "billing";
+  if (cat.includes("contract") || cat.includes("milestone") || cat.includes("job") || cat.includes("proposal")) return "contract";
+  if (cat.includes("account") || cat.includes("profile") || cat.includes("register") || cat.includes("onboard")) return "account";
+  if (cat.includes("technical") || cat.includes("bug") || cat.includes("error") || cat.includes("system")) return "technical";
+  return "other";
+}
+
+export function formatTicketSubject(prompt: string): string {
+  const clean = prompt.replace(/\s+/g, " ").trim();
+  const base = clean.length > 0 ? clean : "Support Request";
+  const subject = `Chatbot Inquiry: ${base}`;
+  if (subject.length <= 150) return subject;
+  return subject.slice(0, 147) + "...";
+}
+
+export function buildTicketDescription(
+  userPrompt: string,
+  history: ChatMessage[],
+  category?: string
+): string {
+  const parts: string[] = [];
+  parts.push("=== Freelancr Chatbot Support Request ===");
+  if (category) {
+    parts.push(`Topic / Category: ${category}`);
+  }
+  parts.push("");
+  parts.push("--- User Inquiry ---");
+  parts.push(userPrompt.trim());
+
+  // Recent conversational context (up to last 4 non-welcome messages prior to current)
+  const recentHistory = history
+    .filter((m) => m.id !== "welcome")
+    .slice(-6);
+
+  if (recentHistory.length > 0) {
+    parts.push("");
+    parts.push("--- Recent Chatbot Transcript ---");
+    for (const msg of recentHistory) {
+      const role = msg.sender === "user" ? "User" : "Chatbot";
+      // Truncate individual message text if unusually long to preserve total limit
+      const text = msg.text.length > 300 ? msg.text.slice(0, 297) + "..." : msg.text;
+      parts.push(`[${role}]: ${text}`);
+    }
+  }
+
+  const combined = parts.join("\n");
+  if (combined.length <= 4900) return combined;
+  return combined.slice(0, 4890) + "\n...[truncated]";
+}
+
 export default function FloatingChatbot() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [escalating, setEscalating] = useState(false);
   const [escalatedSuccess, setEscalatedSuccess] = useState<string | null>(null);
+  const [creatingTicket, setCreatingTicket] = useState(false);
+  const [ticketSuccess, setTicketSuccess] = useState<{ [question: string]: string }>({});
   const [suggestedQuestions, setSuggestedQuestions] = useState<SuggestedQuestion[]>([]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -77,6 +142,7 @@ export default function FloatingChatbot() {
           id: (Date.now() + 1).toString(),
           sender: "bot",
           text: response.answer,
+          userPrompt: questionText,
           answer: response,
           timestamp: new Date(),
         },
@@ -126,16 +192,19 @@ export default function FloatingChatbot() {
   };
 
   const handleEscalate = async (originalQuestion: string, category?: string) => {
+    const trimmed = (originalQuestion || "").trim();
+    if (!trimmed) return;
+
     try {
       setEscalating(true);
-      await knowledgeApi.escalateQuestion(originalQuestion, category);
-      setEscalatedSuccess(originalQuestion);
+      await knowledgeApi.escalateQuestion(trimmed, category);
+      setEscalatedSuccess(trimmed);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           sender: "bot",
-          text: "✅ Your inquiry has been escalated to the Freelancr Support Team! Our staff will review your question and follow up.",
+          text: "✅ Your inquiry has been submitted for staff review! Our team periodically audits unresolved questions to expand our knowledge base.",
           timestamp: new Date(),
         },
       ]);
@@ -143,6 +212,69 @@ export default function FloatingChatbot() {
       alert("Failed to submit escalation. Please try again or open a ticket in the Support Desk.");
     } finally {
       setEscalating(false);
+    }
+  };
+
+  const handleCreateSupportTicket = async (originalQuestion: string, rawCategory?: string) => {
+    const trimmed = (originalQuestion || "").trim();
+    if (!trimmed) return;
+
+    if (!isAuthenticated) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          sender: "bot",
+          text: "🔒 Official support tickets require a verified account so our staff can follow up with you directly. Please sign in or register to open a ticket.",
+          timestamp: new Date(),
+        },
+      ]);
+      return;
+    }
+
+    try {
+      setCreatingTicket(true);
+      const ticketCategory = mapToTicketCategory(rawCategory);
+      const subject = formatTicketSubject(trimmed);
+      const description = buildTicketDescription(trimmed, messages, rawCategory);
+
+      const res = await supportApi.createTicket({
+        category: ticketCategory,
+        subject,
+        description,
+        priority: "medium",
+      });
+
+      const ticketId = res?.data?._id || res?.data?.id || "";
+      setTicketSuccess((prev) => ({ ...prev, [trimmed]: ticketId || "created" }));
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          sender: "bot",
+          text: `🎫 Support Ticket Created Successfully!${
+            ticketId ? ` (Ticket ID: ${ticketId.slice(-8)})` : ""
+          }\nOur support team has received your inquiry and will investigate. You can view the status and updates in your Support Tickets dashboard.`,
+          ticketId: ticketId || undefined,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        "Failed to create support ticket. Please check your connection and try again.";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          sender: "bot",
+          text: `❌ ${errorMsg}`,
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setCreatingTicket(false);
     }
   };
 
@@ -261,26 +393,100 @@ export default function FloatingChatbot() {
                 </div>
 
                 {/* Show Escalation Action if confidence is low or fallback */}
-                {msg.answer && (!msg.answer.answered || msg.answer.confidence < 0.65 || msg.answer.canEscalate) && (
-                  <div className="mt-1.5 max-w-[85%] bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 space-y-1.5">
-                    <p className="font-medium text-[11px]">
-                      Did this answer satisfy your question?
-                    </p>
+                {msg.answer && (!msg.answer.answered || msg.answer.confidence < 0.65 || msg.answer.canEscalate) && (() => {
+                  const escalationQuestion = msg.userPrompt || msg.answer?.canonicalQuestion || "";
+                  const isTicketDone = !!ticketSuccess[escalationQuestion];
+                  const isFaqEscalated = escalatedSuccess === escalationQuestion;
+
+                  return (
+                    <div className="mt-1.5 max-w-[85%] bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 space-y-2">
+                      <p className="font-medium text-[11px]">
+                        Did this answer satisfy your question?
+                      </p>
+
+                      <div className="flex flex-col gap-1.5">
+                        {/* Primary Action: Official Support Ticket (Authenticated) */}
+                        {isAuthenticated ? (
+                          <button
+                            onClick={() =>
+                              handleCreateSupportTicket(
+                                escalationQuestion,
+                                msg.answer?.category
+                              )
+                            }
+                            disabled={
+                              creatingTicket ||
+                              !escalationQuestion.trim() ||
+                              isTicketDone
+                            }
+                            className="w-full text-center py-1.5 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition disabled:opacity-50"
+                          >
+                            {isTicketDone
+                              ? "✓ Support Ticket Created"
+                              : creatingTicket
+                              ? "Opening Ticket..."
+                              : "🎫 Open Support Ticket"}
+                          </button>
+                        ) : (
+                          <div className="bg-white/80 rounded-lg p-2 border border-amber-200/80 space-y-1">
+                            <p className="text-[10px] text-amber-800">
+                              Need personalized help? Sign in to open a support ticket.
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => navigate("/login")}
+                                className="flex-1 py-1 px-2 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-semibold transition"
+                              >
+                                Sign In
+                              </button>
+                              <button
+                                onClick={() => navigate("/register")}
+                                className="flex-1 py-1 px-2 text-center bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded text-[11px] font-medium transition"
+                              >
+                                Register
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Secondary Action: Knowledge Gap Escalation (FAQ improvement) */}
+                        <button
+                          onClick={() =>
+                            handleEscalate(
+                              escalationQuestion,
+                              msg.answer?.category
+                            )
+                          }
+                          disabled={
+                            escalating ||
+                            !escalationQuestion.trim() ||
+                            isFaqEscalated
+                          }
+                          className="w-full text-center py-1 px-2 bg-transparent hover:bg-amber-100/70 text-amber-800 rounded-lg text-[11px] font-medium transition disabled:opacity-50 border border-amber-300"
+                        >
+                          {isFaqEscalated
+                            ? "✓ Flagged for FAQ Review"
+                            : escalating
+                            ? "Flagging..."
+                            : "Flag Question for FAQ Review"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Show View Ticket Deep-Link Button if a ticket was created */}
+                {msg.ticketId && (
+                  <div className="mt-1.5 max-w-[85%] bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 text-xs text-indigo-900 space-y-1.5">
                     <button
-                      onClick={() =>
-                        handleEscalate(
-                          msg.answer?.canonicalQuestion || query || "Marketplace question",
-                          msg.answer?.category
-                        )
-                      }
-                      disabled={escalating || escalatedSuccess === (msg.answer?.canonicalQuestion || query)}
-                      className="w-full text-center py-1.5 px-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-sm transition disabled:opacity-50"
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate("/support", { state: { ticketId: msg.ticketId } });
+                      }}
+                      className="w-full text-center py-1.5 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      {escalatedSuccess === (msg.answer?.canonicalQuestion || query)
-                        ? "✓ Escalated to Staff"
-                        : escalating
-                        ? "Submitting..."
-                        : "Escalate to Human Support"}
+                      <span>View Ticket #{msg.ticketId.slice(-8)}</span>
+                      <span>→</span>
                     </button>
                   </div>
                 )}

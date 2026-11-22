@@ -7,16 +7,58 @@ import {
 import { useLocation } from "react-router-dom";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
-const CATEGORIES = [
-  "General",
-  "Account & Security",
-  "Billing & Escrow",
-  "Contracts & Milestones",
-  "Jobs & Proposals",
-  "Freelancer Guide",
-  "Client Guide",
-  "Platform Policies",
+export interface CategoryOption {
+  value: string;
+  label: string;
+}
+
+export const KNOWLEDGE_CATEGORIES: CategoryOption[] = [
+  { value: "general", label: "General" },
+  { value: "registration", label: "Registration" },
+  { value: "onboarding", label: "Onboarding" },
+  { value: "profile", label: "Profile & Account" },
+  { value: "jobs", label: "Jobs & Listings" },
+  { value: "proposals", label: "Proposals & Bidding" },
+  { value: "contracts", label: "Contracts & Milestones" },
+  { value: "payments", label: "Payments & Escrow" },
+  { value: "messages", label: "Messages & Communication" },
+  { value: "support", label: "Support & Help" },
 ];
+
+export const VALID_CATEGORY_VALUES = new Set(KNOWLEDGE_CATEGORIES.map((c) => c.value));
+
+export function getCategoryLabel(val?: string): string {
+  if (!val) return "General";
+  const normalized = val.toLowerCase().trim();
+  const found = KNOWLEDGE_CATEGORIES.find((c) => c.value === normalized);
+  if (found) return found.label;
+
+  // Fallbacks for legacy display strings if encountered
+  if (normalized.includes("bill") || normalized.includes("escrow") || normalized.includes("payment")) return "Payments & Escrow";
+  if (normalized.includes("contract") || normalized.includes("milestone")) return "Contracts & Milestones";
+  if (normalized.includes("job") || normalized.includes("proposal")) return "Jobs & Listings";
+  if (normalized.includes("profile") || normalized.includes("account")) return "Profile & Account";
+  if (normalized.includes("support")) return "Support & Help";
+  return val.charAt(0).toUpperCase() + val.slice(1);
+}
+
+export function toBackendCategory(val?: string): string {
+  if (!val) return "general";
+  const normalized = val.toLowerCase().trim();
+  if (VALID_CATEGORY_VALUES.has(normalized)) return normalized;
+
+  // Map legacy display strings to valid backend enum
+  if (normalized.includes("bill") || normalized.includes("escrow") || normalized.includes("payment")) return "payments";
+  if (normalized.includes("contract") || normalized.includes("milestone")) return "contracts";
+  if (normalized.includes("job")) return "jobs";
+  if (normalized.includes("proposal") || normalized.includes("bid")) return "proposals";
+  if (normalized.includes("profile") || normalized.includes("account")) return "profile";
+  if (normalized.includes("support") || normalized.includes("help") || normalized.includes("polic")) return "support";
+  if (normalized.includes("register")) return "registration";
+  if (normalized.includes("onboard")) return "onboarding";
+  if (normalized.includes("message") || normalized.includes("chat")) return "messages";
+  return "general";
+}
 
 export default function AdminKnowledgeBasePage() {
   const location = useLocation();
@@ -39,7 +81,7 @@ export default function AdminKnowledgeBasePage() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
   const [answer, setAnswer] = useState("");
-  const [category, setCategory] = useState<string>("General");
+  const [category, setCategory] = useState<string>("general");
   const [status, setStatus] = useState<"draft" | "published" | "archived">("published");
   const [errorMsg, setErrorMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +94,7 @@ export default function AdminKnowledgeBasePage() {
   useEffect(() => {
     if (location.state && (location.state as any).prefillQuestion) {
       setCanonicalQuestion((location.state as any).prefillQuestion);
+      setCategory(toBackendCategory((location.state as any).prefillCategory));
       setIsModalOpen(true);
     }
   }, [location.state]);
@@ -78,7 +121,7 @@ export default function AdminKnowledgeBasePage() {
     setAlternateQuestions([]);
     setKeywords([]);
     setAnswer("");
-    setCategory("General");
+    setCategory("general");
     setStatus("published");
     setErrorMsg("");
     setIsModalOpen(true);
@@ -90,7 +133,7 @@ export default function AdminKnowledgeBasePage() {
     setAlternateQuestions([...entry.alternateQuestions]);
     setKeywords([...entry.keywords]);
     setAnswer(entry.answer);
-    setCategory(entry.category);
+    setCategory(toBackendCategory(entry.category));
     setStatus(entry.status);
     setErrorMsg("");
     setIsModalOpen(true);
@@ -129,12 +172,18 @@ export default function AdminKnowledgeBasePage() {
       setSubmitting(true);
       setErrorMsg("");
 
+      const safeCategory = toBackendCategory(category);
+      if (!VALID_CATEGORY_VALUES.has(safeCategory)) {
+        setErrorMsg("Please select a valid category.");
+        return;
+      }
+
       const payload = {
         canonicalQuestion: canonicalQuestion.trim(),
         alternateQuestions,
         keywords,
         answer: answer.trim(),
-        category,
+        category: safeCategory,
         status,
       };
 
@@ -223,9 +272,9 @@ export default function AdminKnowledgeBasePage() {
             className="w-full text-sm rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="All">All Categories</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+            {KNOWLEDGE_CATEGORIES.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.label}
               </option>
             ))}
           </select>
@@ -275,7 +324,7 @@ export default function AdminKnowledgeBasePage() {
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {entry.category}
+                      {getCategoryLabel(entry.category)}
                     </span>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -404,9 +453,9 @@ export default function AdminKnowledgeBasePage() {
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full text-sm rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    {KNOWLEDGE_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.label}
                       </option>
                     ))}
                   </select>

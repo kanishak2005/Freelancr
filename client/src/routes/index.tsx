@@ -34,6 +34,7 @@ import ContractDetailsPage from "../pages/ContractDetailsPage";
 import UserReviewsPage from "../pages/UserReviewsPage";
 import NotificationsPage from "../pages/NotificationsPage";
 import PaymentsPage from "../pages/PaymentsPage";
+import SupportTicketsPage from "../pages/SupportTicketsPage";
 
 import AdminRoute from "../components/common/AdminRoute";
 import AdminDashboardPage from "../pages/AdminDashboardPage";
@@ -192,6 +193,10 @@ export const router = createBrowserRouter([
           {
             path: "/chat/:userId",
             element: <ChatRoute />,
+          },
+          {
+            path: "/support",
+            element: <SupportTicketsPage />,
           },
           {
             element: <AdminRoute />,

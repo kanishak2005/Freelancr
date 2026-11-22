@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { KnowledgeBaseController } from "./knowledgeBase.controller";
-import { authenticate } from "../../middleware/auth.middleware";
+import { authenticate, optionalAuthenticate } from "../../middleware/auth.middleware";
 import { authorize } from "../../middleware/authorize.middleware";
 import { body, param, query } from "express-validator";
 import { validate } from "../../middleware/validate.middleware";
@@ -25,6 +25,7 @@ router.get("/chatbot/suggested", KnowledgeBaseController.getSuggestedQuestions);
 
 router.post(
   "/chatbot/escalate",
+  optionalAuthenticate,
   [
     body("question")
       .isString()

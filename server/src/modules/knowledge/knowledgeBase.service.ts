@@ -72,11 +72,34 @@ export class KnowledgeBaseService {
 
     const normalized = normalizeQuestion(rawQuestion);
 
+    const validCategories = new Set([
+      "general",
+      "registration",
+      "onboarding",
+      "profile",
+      "jobs",
+      "proposals",
+      "contracts",
+      "payments",
+      "messages",
+      "support",
+    ]);
+
+    let safeCategory = "general";
+    if (typeof params.category === "string" && params.category.trim()) {
+      const lower = params.category.trim().toLowerCase();
+      if (validCategories.has(lower)) {
+        safeCategory = lower;
+      }
+    }
+
     const escalation = await KnowledgeBaseRepository.createEscalation({
       question: rawQuestion,
       normalizedQuestion: normalized,
-      category: params.category || "general",
-      ...(params.userId ? { user: new Types.ObjectId(params.userId) } : {}),
+      category: safeCategory,
+      ...(params.userId && Types.ObjectId.isValid(params.userId)
+        ? { user: new Types.ObjectId(params.userId) }
+        : {}),
       userRole: params.userRole || "anonymous",
       status: "pending",
     });
