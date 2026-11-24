@@ -11,6 +11,9 @@ import {
   type CommissionSummary,
   type CommissionRecord,
 } from "../services/admin.api";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 
 type ActiveTab = "overview" | "commission" | "gateway";
 
@@ -23,38 +26,40 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const loadAll = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const [dashData, gwData, commSummary, commLedger] = await Promise.allSettled([
+        getAdminDashboard(),
+        getAdminGatewayDiagnostics(),
+        getAdminCommissionSummary(),
+        getAdminCommissionLedger({ limit: 10 }),
+      ]);
+
+      if (dashData.status === "fulfilled") setDashboard(dashData.value);
+      if (gwData.status === "fulfilled") setGateway(gwData.value);
+      if (commSummary.status === "fulfilled") setCommissionSummary(commSummary.value);
+      if (commLedger.status === "fulfilled") setCommissionRecords(commLedger.value.data || []);
+    } catch (err) {
+      console.error("Failed to load admin dashboard data:", err);
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadAll = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const [dashData, gwData, commSummary, commLedger] = await Promise.allSettled([
-          getAdminDashboard(),
-          getAdminGatewayDiagnostics(),
-          getAdminCommissionSummary(),
-          getAdminCommissionLedger({ limit: 10 }),
-        ]);
-
-        if (dashData.status === "fulfilled") setDashboard(dashData.value);
-        if (gwData.status === "fulfilled") setGateway(gwData.value);
-        if (commSummary.status === "fulfilled") setCommissionSummary(commSummary.value);
-        if (commLedger.status === "fulfilled") setCommissionRecords(commLedger.value.data || []);
-      } catch (err) {
-        console.error("Failed to load admin dashboard data:", err);
-        setError("Failed to load dashboard data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadAll();
   }, []);
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-7xl px-6 py-10">
-        <div className="flex min-h-[300px] items-center justify-center">
-          <p className="text-gray-600">Loading admin operations center...</p>
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
+        <LoadingSkeleton className="h-8 w-64 mb-2" />
+        <LoadingSkeleton className="h-4 w-96 mb-6" />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <LoadingSkeleton className="h-32 w-full rounded-2xl" count={4} />
         </div>
       </main>
     );
@@ -62,50 +67,55 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      {/* Header Banner */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Control Center</h1>
-          <p className="mt-1 text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            Admin Control Center
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
             Real-time platform operations, payment gateway status, and commission ledger.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+          <Badge variant="success" size="md">
             Production Safeguards Active
-          </span>
+          </Badge>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mb-8 border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-slate-200">
+        <nav className="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto">
           <button
+            type="button"
             onClick={() => setActiveTab("overview")}
-            className={`pb-4 text-sm font-medium border-b-2 transition ${
+            className={`pb-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "overview"
                 ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
             }`}
           >
             Overview & Quick Actions
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("commission")}
-            className={`pb-4 text-sm font-medium border-b-2 transition ${
+            className={`pb-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "commission"
                 ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
             }`}
           >
             Platform Commission & Ledger
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("gateway")}
-            className={`pb-4 text-sm font-medium border-b-2 transition ${
+            className={`pb-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "gateway"
                 ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
             }`}
           >
             Gateway & Provider Health
@@ -114,8 +124,11 @@ export default function AdminDashboardPage() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          {error}
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 flex items-center justify-between">
+          <span>{error}</span>
+          <Button variant="danger" size="sm" onClick={loadAll}>
+            Retry
+          </Button>
         </div>
       )}
 
@@ -124,48 +137,74 @@ export default function AdminDashboardPage() {
         <div className="space-y-10">
           {/* Quick Operations Links */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Operational Areas</h2>
+            <h2 className="mb-4 text-lg font-bold text-slate-900 tracking-tight">
+              Operational Areas
+            </h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <Link
                 to="/admin/users"
-                className="rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-200"
               >
-                <div className="text-sm font-medium text-gray-500">User Management</div>
-                <div className="mt-2 text-2xl font-bold text-gray-900">{dashboard.users.total}</div>
-                <div className="mt-1 text-xs text-indigo-600">Inspect & verify users →</div>
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  User Management
+                </div>
+                <div className="mt-2 text-3xl font-extrabold text-slate-900">
+                  {dashboard.users.total}
+                </div>
+                <div className="mt-1 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  Inspect & verify users →
+                </div>
               </Link>
               <Link
                 to="/admin/jobs"
-                className="rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-200"
               >
-                <div className="text-sm font-medium text-gray-500">Marketplace Jobs</div>
-                <div className="mt-2 text-2xl font-bold text-gray-900">{dashboard.jobs.total}</div>
-                <div className="mt-1 text-xs text-indigo-600">Moderate & review jobs →</div>
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Marketplace Jobs
+                </div>
+                <div className="mt-2 text-3xl font-extrabold text-slate-900">
+                  {dashboard.jobs.total}
+                </div>
+                <div className="mt-1 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  Moderate & review jobs →
+                </div>
               </Link>
               <Link
                 to="/admin/payouts"
-                className="rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-200"
               >
-                <div className="text-sm font-medium text-gray-500">Payout Operations</div>
-                <div className="mt-2 text-2xl font-bold text-indigo-600">Disbursements</div>
-                <div className="mt-1 text-xs text-indigo-600">Reconcile & execute payouts →</div>
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Payout Operations
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-indigo-600">
+                  Disbursements
+                </div>
+                <div className="mt-1 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  Reconcile & execute payouts →
+                </div>
               </Link>
               <Link
                 to="/payments"
-                className="rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-200"
               >
-                <div className="text-sm font-medium text-gray-500">Payment History</div>
-                <div className="mt-2 text-2xl font-bold text-gray-900">
-                  {gateway?.verifiedPayments.totalCaptured ?? "—"} Paid
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Payment History
                 </div>
-                <div className="mt-1 text-xs text-indigo-600">View captured orders →</div>
+                <div className="mt-2 text-3xl font-extrabold text-slate-900">
+                  {gateway?.verifiedPayments.totalCaptured ?? "—"} <span className="text-sm font-semibold text-slate-500">Paid</span>
+                </div>
+                <div className="mt-1 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  View captured orders →
+                </div>
               </Link>
             </div>
           </section>
 
           {/* User Metrics */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">User Breakdown</h2>
+            <h2 className="mb-4 text-lg font-bold text-slate-900 tracking-tight">
+              User Breakdown
+            </h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <AdminStatCard label="Clients" value={dashboard.users.clients} />
               <AdminStatCard label="Freelancers" value={dashboard.users.freelancers} />
@@ -176,7 +215,9 @@ export default function AdminDashboardPage() {
 
           {/* Jobs Metrics */}
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Job Pipeline</h2>
+            <h2 className="mb-4 text-lg font-bold text-slate-900 tracking-tight">
+              Job Pipeline
+            </h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <AdminStatCard label="Open for Bids" value={dashboard.jobs.open} />
               <AdminStatCard label="In Progress" value={dashboard.jobs.inProgress} />
@@ -191,69 +232,69 @@ export default function AdminDashboardPage() {
       {activeTab === "commission" && (
         <div className="space-y-8">
           {/* Policy Banner */}
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-5">
+          <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/60 p-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-base font-semibold text-indigo-900">
+                <h3 className="text-base font-bold text-indigo-950">
                   Platform Commission Model: 10% on Gross Captured Payments
                 </h3>
-                <p className="mt-0.5 text-xs text-indigo-700">
+                <p className="mt-0.5 text-xs text-indigo-800">
                   Deterministic accounting in minor currency units (paise). Recognized upon verified Razorpay payment capture.
                 </p>
               </div>
-              <span className="rounded bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800">
+              <Badge variant="primary" size="md">
                 Idempotent & Audited
-              </span>
+              </Badge>
             </div>
           </div>
 
           {/* Commission Summary Cards */}
           {commissionSummary && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Commission Earned
                 </div>
-                <div className="mt-2 text-2xl font-bold text-gray-900">
+                <div className="mt-2 text-2xl font-extrabold text-slate-900">
                   ₹{commissionSummary.totals.earned.major.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </div>
-                <div className="mt-1 text-xs text-emerald-600">
+                <div className="mt-1 text-xs font-medium text-emerald-700">
                   {commissionSummary.totals.earned.count} verified transactions
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Pending Settlement
                 </div>
-                <div className="mt-2 text-2xl font-bold text-amber-600">
+                <div className="mt-2 text-2xl font-extrabold text-amber-700">
                   ₹{commissionSummary.totals.pendingSettlement.major.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </div>
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-slate-500">
                   Awaiting gateway transfer batch
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Settled in Platform Bank
                 </div>
-                <div className="mt-2 text-2xl font-bold text-gray-900">
+                <div className="mt-2 text-2xl font-extrabold text-slate-900">
                   ₹{commissionSummary.totals.settledInBank.major.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </div>
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-slate-500">
                   Requires bank settlement proof
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Reversed / Refunded
                 </div>
-                <div className="mt-2 text-2xl font-bold text-rose-600">
+                <div className="mt-2 text-2xl font-extrabold text-rose-700">
                   ₹{commissionSummary.totals.refunded.major.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </div>
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-slate-500">
                   {commissionSummary.totals.refunded.count} refunded transactions
                 </div>
               </div>
@@ -261,70 +302,71 @@ export default function AdminDashboardPage() {
           )}
 
           {/* Honest Appraisal Notice */}
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <h4 className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
               Accounting Invariant & Settlement Honesty
             </h4>
-            <p className="mt-1 text-xs text-amber-800 leading-relaxed">
+            <p className="mt-1 text-xs text-amber-900 leading-relaxed">
               Freelancr records commission as <strong>Earned</strong> immediately when payment signature or webhook verification succeeds. Funds are not marked as <strong>Settled in Bank</strong> without an authoritative settlement payout batch from Razorpay. Razorpay Route account transfers require business KYC approval with Razorpay.
             </p>
           </div>
 
           {/* Commission Ledger Table */}
-          <section className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+            <div className="border-b border-slate-200/80 px-6 py-4 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Commission Ledger Records</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Authoritative immutable ledger of platform earnings</p>
+                <h3 className="text-base font-bold text-slate-900">Commission Ledger Records</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Authoritative immutable ledger of platform earnings</p>
               </div>
             </div>
 
             {commissionRecords.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-500">
+              <div className="p-8 text-center text-sm text-slate-500">
                 No commission entries recorded yet. Captured contract payments will appear here automatically.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-                  <thead className="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+                <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                  <thead className="bg-slate-50/75 text-xs font-semibold text-slate-500 uppercase">
                     <tr>
-                      <th className="px-6 py-3">Order / Reference</th>
-                      <th className="px-6 py-3">Gross Payment</th>
-                      <th className="px-6 py-3">Rate</th>
-                      <th className="px-6 py-3">Commission</th>
-                      <th className="px-6 py-3">Status</th>
-                      <th className="px-6 py-3">Recognized Date</th>
+                      <th className="px-6 py-3.5">Order / Reference</th>
+                      <th className="px-6 py-3.5">Gross Payment</th>
+                      <th className="px-6 py-3.5">Rate</th>
+                      <th className="px-6 py-3.5">Commission</th>
+                      <th className="px-6 py-3.5">Status</th>
+                      <th className="px-6 py-3.5">Recognized Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-100">
                     {commissionRecords.map((record) => (
-                      <tr key={record._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-mono text-xs text-gray-700">
+                      <tr key={record._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-mono text-xs text-slate-700">
                           {record.razorpayOrderId}
                         </td>
-                        <td className="px-6 py-4 text-gray-900 font-medium">
+                        <td className="px-6 py-4 text-slate-900 font-semibold">
                           ₹{(record.grossAmountMinor / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="px-6 py-4 text-gray-600 text-xs">
+                        <td className="px-6 py-4 text-slate-600 text-xs">
                           {record.ratePercent}%
                         </td>
-                        <td className="px-6 py-4 text-indigo-600 font-semibold">
+                        <td className="px-6 py-4 text-indigo-700 font-bold">
                           ₹{(record.commissionAmountMinor / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </td>
                         <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          <Badge
+                            variant={
                               record.status === "earned"
-                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+                                ? "success"
                                 : record.status === "settled"
-                                ? "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20"
-                                : "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20"
-                            }`}
+                                ? "primary"
+                                : "danger"
+                            }
+                            size="sm"
                           >
                             {record.status}
-                          </span>
+                          </Badge>
                         </td>
-                        <td className="px-6 py-4 text-xs text-gray-500">
+                        <td className="px-6 py-4 text-xs text-slate-500">
                           {new Date(record.recognizedAt).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
@@ -347,56 +389,59 @@ export default function AdminDashboardPage() {
           {gateway ? (
             <>
               {/* Status Header */}
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-bold text-xl">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 font-bold text-xl border border-indigo-100">
                       R
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900">
+                      <h2 className="text-lg font-bold text-slate-900">
                         {gateway.gateway} Gateway Diagnostics
                       </h2>
                       <div className="mt-1 flex items-center gap-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            gateway.status === "configured"
-                              ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
-                              : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20"
-                          }`}
+                        <Badge
+                          variant={gateway.status === "configured" ? "success" : "warning"}
+                          size="sm"
                         >
                           {gateway.status === "configured" ? "Configured & Active" : "Incomplete Config"}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          Environment Mode: <strong className="uppercase">{gateway.mode}</strong>
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          Environment Mode: <strong className="uppercase text-slate-800">{gateway.mode}</strong>
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-4 border-t border-gray-100 pt-6 sm:grid-cols-3">
+                <div className="mt-6 grid gap-4 border-t border-slate-100 pt-6 sm:grid-cols-3">
                   <div>
-                    <div className="text-xs text-gray-500 font-medium">Public Key ID</div>
-                    <div className="mt-1 font-mono text-sm text-gray-900">{gateway.keyIdMasked}</div>
+                    <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                      Public Key ID
+                    </div>
+                    <div className="mt-1 font-mono text-sm text-slate-900 font-medium">{gateway.keyIdMasked}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 font-medium">API Key Secret</div>
-                    <div className="mt-1 flex items-center gap-1.5 text-sm">
+                    <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                      API Key Secret
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
                       {gateway.hasKeySecret ? (
-                        <span className="text-emerald-600 font-medium">● Securely Loaded</span>
+                        <span className="text-emerald-700">● Securely Loaded</span>
                       ) : (
-                        <span className="text-rose-600 font-medium">Missing</span>
+                        <span className="text-rose-700">Missing</span>
                       )}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 font-medium">Webhook Secret</div>
-                    <div className="mt-1 flex items-center gap-1.5 text-sm">
+                    <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                      Webhook Secret
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
                       {gateway.hasWebhookSecret ? (
-                        <span className="text-emerald-600 font-medium">● Securely Loaded</span>
+                        <span className="text-emerald-700">● Securely Loaded</span>
                       ) : (
-                        <span className="text-rose-600 font-medium">Missing</span>
+                        <span className="text-rose-700">Missing</span>
                       )}
                     </div>
                   </div>
@@ -404,26 +449,26 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Verified Activity */}
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-gray-900">Authoritative Gateway Activity</h3>
-                <p className="mt-0.5 text-xs text-gray-500">Verified from persisted production payment records</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+                <h3 className="text-base font-bold text-slate-900">Authoritative Gateway Activity</h3>
+                <p className="mt-0.5 text-xs text-slate-500">Verified from persisted production payment records</p>
 
                 <div className="mt-4 grid gap-5 sm:grid-cols-3">
-                  <div className="rounded-lg bg-gray-50 p-4">
-                    <div className="text-xs text-gray-500">Total Orders Initiated</div>
-                    <div className="mt-1 text-2xl font-bold text-gray-900">
+                  <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                    <div className="text-xs text-slate-500 font-medium">Total Orders Initiated</div>
+                    <div className="mt-1 text-2xl font-extrabold text-slate-900">
                       {gateway.verifiedPayments.totalOrders}
                     </div>
                   </div>
-                  <div className="rounded-lg bg-gray-50 p-4">
-                    <div className="text-xs text-gray-500">Total Captured Payments</div>
-                    <div className="mt-1 text-2xl font-bold text-emerald-600">
+                  <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                    <div className="text-xs text-slate-500 font-medium">Total Captured Payments</div>
+                    <div className="mt-1 text-2xl font-extrabold text-emerald-700">
                       {gateway.verifiedPayments.totalCaptured}
                     </div>
                   </div>
-                  <div className="rounded-lg bg-gray-50 p-4">
-                    <div className="text-xs text-gray-500">Last Captured Payment</div>
-                    <div className="mt-1 text-sm font-semibold text-gray-900">
+                  <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                    <div className="text-xs text-slate-500 font-medium">Last Captured Payment</div>
+                    <div className="mt-1 text-sm font-bold text-slate-900">
                       {gateway.verifiedPayments.lastCapturedAt
                         ? new Date(gateway.verifiedPayments.lastCapturedAt).toLocaleString("en-IN")
                         : "No captured payments yet"}
@@ -433,33 +478,33 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Provider Capabilities Table */}
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-gray-900">Provider Capabilities Assessment</h3>
-                <div className="mt-4 divide-y divide-gray-100 text-sm">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+                <h3 className="text-base font-bold text-slate-900">Provider Capabilities Assessment</h3>
+                <div className="mt-4 divide-y divide-slate-100 text-sm">
                   <div className="flex items-center justify-between py-3">
-                    <span className="text-gray-700">Order Creation (Server-to-Gateway)</span>
-                    <span className="font-semibold text-emerald-600">Available</span>
+                    <span className="text-slate-700 font-medium">Order Creation (Server-to-Gateway)</span>
+                    <span className="font-bold text-emerald-700">Available</span>
                   </div>
                   <div className="flex items-center justify-between py-3">
-                    <span className="text-gray-700">Client Checkout & Signature Verification</span>
-                    <span className="font-semibold text-emerald-600">Available</span>
+                    <span className="text-slate-700 font-medium">Client Checkout & Signature Verification</span>
+                    <span className="font-bold text-emerald-700">Available</span>
                   </div>
                   <div className="flex items-center justify-between py-3">
-                    <span className="text-gray-700">Webhook Verification & Idempotent Processing</span>
-                    <span className="font-semibold text-emerald-600">Available</span>
+                    <span className="text-slate-700 font-medium">Webhook Verification & Idempotent Processing</span>
+                    <span className="font-bold text-emerald-700">Available</span>
                   </div>
                   <div className="flex items-center justify-between py-3">
                     <div>
-                      <span className="text-gray-700">Razorpay Route Direct Account Transfers</span>
-                      <p className="text-xs text-gray-400">Direct account linking and automated settlement</p>
+                      <span className="text-slate-700 font-medium">Razorpay Route Direct Account Transfers</span>
+                      <p className="text-xs text-slate-400">Direct account linking and automated settlement</p>
                     </div>
-                    <span className="font-semibold text-amber-600">Requires Dedicated KYC</span>
+                    <span className="font-bold text-amber-700">Requires Dedicated KYC</span>
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 text-center text-sm text-slate-500">
               Gateway diagnostics unavailable.
             </div>
           )}

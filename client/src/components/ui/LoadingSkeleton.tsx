@@ -16,8 +16,8 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
         <div
           key={i}
           className={clsx(
-            "animate-pulse bg-slate-200/80 rounded-md",
-            className || "h-4 w-full mb-2"
+            "animate-pulse bg-slate-200/70 rounded-lg",
+            className || "h-4 w-full mb-2.5"
           )}
         />
       ))}

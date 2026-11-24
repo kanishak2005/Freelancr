@@ -6,6 +6,9 @@ import { getMyContracts, type ContractUser, type PaginatedContractsResult } from
 import { getMyProposals, type Proposal } from "../services/proposals.api";
 import { getUserReviews, type Review } from "../services/reviews.api";
 import { getAllJobs, type Job } from "../services/jobs.api";
+import { Button } from "../components/ui/Button";
+import { Badge, type BadgeProps } from "../components/ui/Badge";
+import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -141,8 +144,8 @@ export default function FreelancerDashboardPage() {
   // Permission Guard
   if (user && user.role !== "freelancer") {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="rounded-2xl border border-amber-300 bg-amber-50/80 p-8 text-center max-w-xl mx-auto shadow-xs">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
             <svg
               className="h-8 w-8"
@@ -158,19 +161,17 @@ export default function FreelancerDashboardPage() {
               />
             </svg>
           </div>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
             Freelancer Dashboard Notice
           </h1>
-          <p className="mt-2 text-gray-600">
-            This dashboard is dedicated to freelancers. You are currently
-            signed in as a <span className="font-semibold">{user.role}</span>.
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+            This dashboard is dedicated to freelancers. You are currently signed in as a <span className="font-semibold text-slate-900 capitalize">{user.role}</span>.
           </p>
-          <div className="mt-6 flex justify-center gap-4">
-            <Link
-              to={user.role === "admin" ? "/admin" : "/"}
-              className="rounded-xl bg-indigo-600 px-6 py-2.5 font-medium text-white hover:bg-indigo-700 transition"
-            >
-              Go to Your Dashboard
+          <div className="mt-6 flex justify-center">
+            <Link to={user.role === "admin" ? "/admin" : user.role === "client" ? "/my-jobs" : "/"}>
+              <Button variant="primary">
+                Go to Your Dashboard
+              </Button>
             </Link>
           </div>
         </div>
@@ -179,190 +180,180 @@ export default function FreelancerDashboardPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header Banner */}
-      <section className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-6">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
+      {/* 1. Header Banner */}
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-              Freelancer Dashboard
+          <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Freelancer Workspace
             </h1>
-            <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-semibold text-emerald-800">
+            <Badge variant="primary" size="sm">
               Freelancer
-            </span>
+            </Badge>
           </div>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome back, <span className="font-medium text-gray-800">{user?.fullName || "Freelancer"}</span>. Here is your active work, proposal pipeline, and platform opportunities.
+          <p className="text-xs sm:text-sm text-slate-500">
+            Welcome back, <span className="font-semibold text-slate-800">{user?.fullName || "Freelancer"}</span>. Track active deliverables, proposal pipeline, and marketplace opportunities.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/jobs"
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            Find Work
+        <div className="flex flex-wrap items-center gap-3">
+          <Link to="/jobs">
+            <Button variant="primary" size="md" className="gap-2">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <span>Explore Jobs</span>
+            </Button>
           </Link>
-          <Link
-            to="/my-proposals"
-            className="inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition"
-          >
-            My Proposals
+          <Link to="/my-proposals">
+            <Button variant="outline" size="md">
+              My Proposals
+            </Button>
           </Link>
         </div>
       </section>
 
-      {/* Error State */}
+      {/* 2. Error State */}
       {isError && (
-        <section className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-rose-800">
-                Data Loading Error
-              </h2>
-              <p className="mt-1 text-sm text-rose-700">{errorMessage}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 transition"
-            >
-              Retry
-            </button>
+        <section className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-rose-800">
+              Data Loading Error
+            </h2>
+            <p className="mt-0.5 text-xs text-rose-700">{errorMessage}</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRetry}
+            className="text-rose-700 hover:bg-rose-100"
+          >
+            Retry
+          </Button>
         </section>
       )}
 
-      {/* KPI Metric Cards */}
-      <section className="mb-10">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Active Contracts */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <dt className="truncate text-sm font-medium text-gray-500">
-              Active Contracts
-            </dt>
-            <dd className="mt-2 text-3xl font-extrabold text-gray-900">
-              {isLoading ? (
-                <div className="h-9 w-16 animate-pulse rounded bg-gray-200" />
-              ) : (
-                activeContracts.length
-              )}
-            </dd>
-            <p className="mt-2 text-xs text-gray-400">
-              Currently in execution
-            </p>
+      {/* 3. KPI Metric Cards */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Active Contracts */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Active Contracts
+          </span>
+          <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            {isLoading ? (
+              <LoadingSkeleton className="h-8 w-16" />
+            ) : (
+              activeContracts.length
+            )}
           </div>
+          <p className="mt-1 text-[11px] text-slate-500 font-medium">
+            Currently in execution
+          </p>
+        </div>
 
-          {/* Completed Contracts */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <dt className="truncate text-sm font-medium text-gray-500">
-              Completed Contracts
-            </dt>
-            <dd className="mt-2 text-3xl font-extrabold text-emerald-600">
-              {isLoading ? (
-                <div className="h-9 w-16 animate-pulse rounded bg-gray-200" />
-              ) : (
-                completedContracts.length
-              )}
-            </dd>
-            <p className="mt-2 text-xs text-gray-400">
-              Successfully delivered ({formatCurrency(completedWorkValue)})
-            </p>
+        {/* Completed Contracts */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Completed Contracts
+          </span>
+          <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-emerald-700">
+            {isLoading ? (
+              <LoadingSkeleton className="h-8 w-16" />
+            ) : (
+              completedContracts.length
+            )}
           </div>
+          <p className="mt-1 text-[11px] text-slate-500 font-medium truncate">
+            Delivered ({formatCurrency(completedWorkValue)})
+          </p>
+        </div>
 
-          {/* Client Rating */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <dt className="truncate text-sm font-medium text-gray-500">
-              Client Rating
-            </dt>
-            <dd className="mt-2 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-amber-500">
-                {isLoading ? (
-                  <div className="h-9 w-16 animate-pulse rounded bg-gray-200" />
-                ) : averageRating > 0 ? (
-                  `${averageRating} ?`
-                ) : (
-                  "N/A"
-                )}
+        {/* Client Rating */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Verified Rating
+          </span>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-amber-600">
+              {isLoading ? (
+                <LoadingSkeleton className="h-8 w-16" />
+              ) : averageRating > 0 ? (
+                `${averageRating} ★`
+              ) : (
+                "N/A"
+              )}
+            </span>
+            {!isLoading && reviews.length > 0 && (
+              <span className="text-[11px] text-slate-400 font-medium">
+                ({reviews.length})
               </span>
-              {!isLoading && (
-                <span className="text-xs text-gray-400">
-                  ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
-                </span>
-              )}
-            </dd>
-            <p className="mt-2 text-xs text-gray-400">
-              Based on verified client feedback
-            </p>
+            )}
           </div>
+          <p className="mt-1 text-[11px] text-slate-500 font-medium">
+            Based on client reviews
+          </p>
+        </div>
 
-          {/* Active Work Value (Escrow / Pending Payout) */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <dt className="truncate text-sm font-medium text-gray-500">
-              Active Contract Value
-            </dt>
-            <dd className="mt-2 text-3xl font-extrabold text-indigo-600">
-              {isLoading ? (
-                <div className="h-9 w-24 animate-pulse rounded bg-gray-200" />
-              ) : (
-                formatCurrency(activeWorkValue)
-              )}
-            </dd>
-            <p className="mt-2 text-xs text-gray-400">
-              In escrow / pending milestone completion
-            </p>
+        {/* Active Contract Value (Escrow / Pending Payout) */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Active Contract Value
+          </span>
+          <div className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-indigo-600 truncate">
+            {isLoading ? (
+              <LoadingSkeleton className="h-8 w-24" />
+            ) : (
+              formatCurrency(activeWorkValue)
+            )}
           </div>
+          <p className="mt-1 text-[11px] text-slate-500 font-medium truncate">
+            In platform hold / pending completion
+          </p>
         </div>
       </section>
 
-      {/* Main Content Grid: Active Work & Proposal Pipeline */}
+      {/* 4. Main Content Grid: Active Work & Proposal Pipeline */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left Column (2 cols): Active Contracts Due & Recommended Jobs */}
         <div className="space-y-8 lg:col-span-2">
           {/* Active Work & Deliverables Due */}
-          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b pb-4">
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
                   Active Work & Milestones Due
                 </h2>
-                <p className="text-xs text-gray-500">
-                  Projects in progress requiring your deliverables
+                <p className="text-xs text-slate-500">
+                  Projects currently in progress requiring your deliverables
                 </p>
               </div>
               <Link
                 to="/contracts"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
               >
-                View all contracts ?
+                View all contracts →
               </Link>
             </div>
 
             {isLoading ? (
               <div className="mt-4 space-y-3">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-24 animate-pulse rounded-xl bg-gray-100"
-                  />
-                ))}
+                <LoadingSkeleton className="h-24 w-full rounded-xl" count={2} />
               </div>
             ) : activeContracts.length === 0 ? (
-              <div className="mt-6 rounded-xl border border-dashed border-gray-200 py-10 text-center">
+              <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-10 text-center">
                 <svg
-                  className="mx-auto h-10 w-10 text-gray-400"
+                  className="mx-auto h-9 w-9 text-slate-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -374,23 +365,22 @@ export default function FreelancerDashboardPage() {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                <h3 className="mt-3 text-sm font-semibold text-gray-900">
+                <h3 className="mt-2.5 text-sm font-semibold text-slate-900">
                   No active contracts
                 </h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  Apply to open jobs to win contracts and start working.
+                <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+                  Submit proposals to open marketplace opportunities to get hired and begin work.
                 </p>
                 <div className="mt-4">
-                  <Link
-                    to="/jobs"
-                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
-                  >
-                    Browse Opportunities
+                  <Link to="/jobs">
+                    <Button variant="primary" size="sm">
+                      Browse Opportunities
+                    </Button>
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="mt-4 divide-y divide-gray-100">
+              <div className="mt-4 divide-y divide-slate-100">
                 {activeContracts.map((contract) => {
                   const clientObj =
                     typeof contract.client === "object"
@@ -400,22 +390,22 @@ export default function FreelancerDashboardPage() {
                   return (
                     <article
                       key={contract._id}
-                      className="py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:bg-gray-50/50 p-2 rounded-xl transition"
+                      className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-slate-50/60 p-2.5 rounded-xl transition-colors"
                     >
-                      <div>
-                        <h3 className="text-base font-semibold text-gray-900">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
                           <Link
                             to={`/contracts/${contract._id}`}
-                            className="hover:text-indigo-600 transition"
+                            className="hover:text-indigo-600 transition-colors"
                           >
                             {contract.title}
                           </Link>
                         </h3>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
                           {clientObj && (
                             <span>
                               Client:{" "}
-                              <span className="font-medium text-gray-700">
+                              <span className="font-semibold text-slate-700">
                                 {clientObj.fullName}
                               </span>
                             </span>
@@ -429,15 +419,14 @@ export default function FreelancerDashboardPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <span className="text-base font-bold text-gray-900">
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-sm sm:text-base font-bold text-slate-900">
                           {formatCurrency(contract.amount)}
                         </span>
-                        <Link
-                          to={`/contracts/${contract._id}`}
-                          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition"
-                        >
-                          Workspace ?
+                        <Link to={`/contracts/${contract._id}`}>
+                          <Button variant="outline" size="sm">
+                            Workspace →
+                          </Button>
                         </Link>
                       </div>
                     </article>
@@ -448,19 +437,19 @@ export default function FreelancerDashboardPage() {
           </section>
 
           {/* Recommended Jobs / Marketplace Opportunities */}
-          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b pb-4">
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
                   Recommended Jobs for You
                 </h2>
-                <p className="text-xs text-gray-500">
-                  Open marketplace jobs currently accepting proposals
+                <p className="text-xs text-slate-500">
+                  Open marketplace jobs currently accepting competitive proposals
                 </p>
               </div>
               <Link
                 to="/jobs"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
               >
                 Explore all jobs →
               </Link>
@@ -468,39 +457,34 @@ export default function FreelancerDashboardPage() {
 
             {jobsQuery.isLoading ? (
               <div className="mt-4 space-y-3">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 animate-pulse rounded-xl bg-gray-100"
-                  />
-                ))}
+                <LoadingSkeleton className="h-20 w-full rounded-xl" count={2} />
               </div>
             ) : recommendedJobs.length === 0 ? (
-              <p className="mt-4 text-center text-sm text-gray-500 py-6">
+              <p className="mt-4 text-center text-xs sm:text-sm text-slate-500 py-6">
                 No open jobs available at the moment.
               </p>
             ) : (
-              <div className="mt-4 divide-y divide-gray-100">
+              <div className="mt-4 divide-y divide-slate-100">
                 {recommendedJobs.map((job) => (
                   <article
                     key={job._id}
-                    className="py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between hover:bg-gray-50/50 p-2 rounded-xl transition"
+                    className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-slate-50/60 p-2.5 rounded-xl transition-colors"
                   >
-                    <div className="max-w-xl">
-                      <h3 className="text-sm font-semibold text-gray-900 hover:text-indigo-600 transition">
+                    <div className="flex-1 min-w-0 max-w-xl">
+                      <h3 className="text-sm font-bold text-slate-900 hover:text-indigo-600 transition-colors truncate">
                         <Link to={`/jobs/${job._id}`}>{job.title}</Link>
                       </h3>
-                      <p className="line-clamp-1 text-xs text-gray-500 mt-0.5">
+                      <p className="line-clamp-1 text-xs text-slate-500 mt-0.5 leading-relaxed">
                         {job.description}
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700 capitalize">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 capitalize border border-slate-200/60">
                           {job.category}
                         </span>
-                        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700 capitalize">
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 capitalize border border-slate-200/60">
                           {job.experienceLevel}
                         </span>
-                        <span className="rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+                        <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 border border-indigo-100">
                           {job.budgetType === "hourly"
                             ? `${formatCurrency(job.budget)}/hr`
                             : formatCurrency(job.budget)}
@@ -510,9 +494,11 @@ export default function FreelancerDashboardPage() {
 
                     <Link
                       to={`/jobs/${job._id}`}
-                      className="inline-flex shrink-0 items-center rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 transition"
+                      className="shrink-0"
                     >
-                      Apply Now
+                      <Button variant="primary" size="sm">
+                        Apply Now
+                      </Button>
                     </Link>
                   </article>
                 ))}
@@ -523,42 +509,42 @@ export default function FreelancerDashboardPage() {
 
         {/* Right Column (1 col): Proposal Pipeline & Recent Submissions */}
         <div className="space-y-8">
-          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between border-b pb-4">
-              <h2 className="text-lg font-bold text-gray-900">
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
                 Proposal Pipeline
               </h2>
               <Link
                 to="/my-proposals"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
               >
-                View all ?
+                View all →
               </Link>
             </div>
 
             {/* Status Breakdown Pills */}
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-amber-50 p-3 border border-amber-100">
-                <span className="block text-2xl font-extrabold text-amber-700">
+              <div className="rounded-xl bg-amber-50/80 p-3 border border-amber-200/80">
+                <span className="block text-2xl font-bold text-amber-800">
                   {isLoading ? "-" : proposalCounts.pending}
                 </span>
-                <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
                   Pending
                 </span>
               </div>
-              <div className="rounded-xl bg-emerald-50 p-3 border border-emerald-100">
-                <span className="block text-2xl font-extrabold text-emerald-700">
+              <div className="rounded-xl bg-emerald-50/80 p-3 border border-emerald-200/80">
+                <span className="block text-2xl font-bold text-emerald-800">
                   {isLoading ? "-" : proposalCounts.accepted}
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
                   Accepted
                 </span>
               </div>
-              <div className="rounded-xl bg-rose-50 p-3 border border-rose-100">
-                <span className="block text-2xl font-extrabold text-rose-700">
+              <div className="rounded-xl bg-rose-50/80 p-3 border border-rose-200/80">
+                <span className="block text-2xl font-bold text-rose-800">
                   {isLoading ? "-" : proposalCounts.rejected}
                 </span>
-                <span className="text-[11px] font-semibold text-rose-800 uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">
                   Rejected
                 </span>
               </div>
@@ -566,63 +552,56 @@ export default function FreelancerDashboardPage() {
 
             {/* Recent Proposals List */}
             <div className="mt-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Recent Submissions
               </h3>
 
               {isLoading ? (
                 <div className="mt-3 space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-16 animate-pulse rounded-lg bg-gray-100"
-                    />
-                  ))}
+                  <LoadingSkeleton className="h-16 w-full rounded-xl" count={3} />
                 </div>
               ) : proposals.length === 0 ? (
-                <div className="mt-4 rounded-xl border border-dashed border-gray-200 py-6 text-center">
-                  <p className="text-xs text-gray-500">
+                <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-6 text-center">
+                  <p className="text-xs text-slate-500">
                     No proposals submitted yet.
                   </p>
                   <Link
                     to="/jobs"
                     className="mt-2 inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-800"
                   >
-                    Start applying ?
+                    Start applying →
                   </Link>
                 </div>
               ) : (
-                <div className="mt-3 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   {proposals.slice(0, 5).map((proposal) => {
                     const jobTitle =
                       typeof proposal.job === "object" && proposal.job
                         ? proposal.job.title
                         : "Job Application";
 
-                    const statusBadgeClass =
+                    const badgeVariant: BadgeProps["variant"] =
                       proposal.status === "accepted"
-                        ? "bg-emerald-100 text-emerald-800"
+                        ? "success"
                         : proposal.status === "pending"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-gray-100 text-gray-700";
+                        ? "warning"
+                        : "neutral";
 
                     return (
                       <Link
                         key={proposal._id}
                         to={`/proposals/${proposal._id}`}
-                        className="block rounded-xl border border-gray-100 p-3 transition hover:border-indigo-100 hover:bg-gray-50/50"
+                        className="block rounded-xl border border-slate-100 p-3 transition-all hover:border-indigo-200 hover:bg-slate-50/70"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <h4 className="text-xs font-semibold text-gray-900 line-clamp-1">
+                          <h4 className="text-xs font-bold text-slate-900 truncate">
                             {jobTitle}
                           </h4>
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusBadgeClass}`}
-                          >
+                          <Badge variant={badgeVariant} size="sm">
                             {proposal.status}
-                          </span>
+                          </Badge>
                         </div>
-                        <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500">
+                        <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                           <span>Bid: {formatCurrency(proposal.bidAmount)}</span>
                           <span>Timeline: {proposal.deliveryTime}d</span>
                         </div>
@@ -635,19 +614,19 @@ export default function FreelancerDashboardPage() {
           </section>
 
           {/* Quick Help & Platform Invariants */}
-          <section className="rounded-2xl border border-gray-100 bg-gradient-to-br from-indigo-50/60 to-purple-50/40 p-6">
-            <h3 className="text-sm font-bold text-gray-900">
+          <section className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-6 shadow-xs space-y-2">
+            <h3 className="text-sm font-bold text-slate-900">
               Escrow & Payment Safety
             </h3>
-            <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-              Client funds are held securely in escrow upon contract activation. Completed work unlocks verified milestone payouts directly to your designated bank account.
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Client funds are held securely in platform escrow upon contract activation. Completed work deliverables unlock verified payouts directly into your withdrawable wallet.
             </p>
-            <div className="mt-4">
+            <div className="pt-2">
               <Link
                 to="/contracts"
-                className="text-xs font-semibold text-indigo-700 hover:text-indigo-900 transition"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
               >
-                Review contracts & milestones ?
+                Review contracts & milestones →
               </Link>
             </div>
           </section>

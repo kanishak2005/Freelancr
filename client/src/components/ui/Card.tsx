@@ -15,7 +15,7 @@ export const Card: React.FC<CardProps> = ({
     <div
       className={clsx(
         "bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden",
-        hoverable && "transition-shadow hover:shadow-md hover:border-slate-300",
+        hoverable && "transition-all duration-150 hover:shadow-sm hover:border-slate-300",
         className
       )}
       {...props}
@@ -54,7 +54,7 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={clsx("px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center", className)}
+    className={clsx("px-6 py-4 bg-slate-50/60 border-t border-slate-100 flex items-center", className)}
     {...props}
   >
     {children}

@@ -58,50 +58,54 @@ export default function ContractsPage() {
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-      <div className="mb-8">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
+      <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
           Contracts & Engagements
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-xs sm:text-sm text-slate-500">
           Track active milestone executions, review deliverable progress, and inspect financial settlement.
         </p>
 
         {/* Status filter tabs */}
-        <div className="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              onClick={() => handleStatusChange(f.value)}
-              className={`rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-colors ${
-                statusFilter === f.value
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="mt-6 flex flex-wrap gap-2 border-b border-slate-200/80 pb-3">
+          {STATUS_FILTERS.map((f) => {
+            const isActive = statusFilter === f.value;
+            return (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => handleStatusChange(f.value)}
+                className={`rounded-lg px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
+                }`}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex items-center justify-between">
+        <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex items-center justify-between">
           <span>{error}</span>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setPage(1)}
-            className="text-xs font-semibold underline hover:text-rose-800"
+            className="text-rose-700 hover:bg-rose-100"
           >
             Retry
-          </button>
+          </Button>
         </div>
       )}
 
       {loading ? (
         <div className="space-y-4">
-          <LoadingSkeleton className="h-32 w-full" count={3} />
+          <LoadingSkeleton className="h-40 w-full" count={3} />
         </div>
       ) : contracts.length === 0 ? (
         <EmptyState
@@ -113,15 +117,15 @@ export default function ContractsPage() {
           }
         />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {contracts.map((contract) => (
             <ContractCard key={contract._id} contract={contract} />
           ))}
 
           {/* Pagination controls */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 pt-4">
-              <span className="text-xs sm:text-sm text-slate-500">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200/80 pt-5">
+              <span className="text-xs sm:text-sm text-slate-500 font-medium">
                 Page {pagination.page} of {pagination.totalPages} ({pagination.total} total engagements)
               </span>
 

@@ -99,20 +99,17 @@ export const Modal: React.FC<ModalProps> = ({
 
       if (e.key === "Tab") {
         if (!modalRef.current) return;
-        const focusables = Array.from(
-          modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-        ).filter((el) => el.offsetParent !== null);
-
-        if (focusables.length === 0) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (focusable.length === 0) {
           e.preventDefault();
           return;
         }
 
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
 
         if (e.shiftKey) {
-          if (document.activeElement === first || document.activeElement === modalRef.current) {
+          if (document.activeElement === first) {
             e.preventDefault();
             last.focus();
           }
@@ -131,7 +128,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!open) return null;
 
-  const maxWidthStyles = {
+  const maxWidths = {
     sm: "max-w-sm",
     md: "max-w-md",
     lg: "max-w-lg",
@@ -141,12 +138,12 @@ export const Modal: React.FC<ModalProps> = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       role="presentation"
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
         aria-hidden="true"
         onClick={() => {
           if (closeOnBackdropClick && !preventClose) {
@@ -155,63 +152,78 @@ export const Modal: React.FC<ModalProps> = ({
         }}
       />
 
-      {/* Dialog Frame */}
+      {/* Modal Dialog Container */}
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descId : undefined}
-        aria-label={!title ? ariaLabel || "Dialog" : undefined}
+        aria-label={!title && ariaLabel ? ariaLabel : undefined}
         tabIndex={-1}
         className={clsx(
-          "relative w-full rounded-2xl bg-white shadow-2xl border border-slate-200/80 p-6 z-10 transition-all outline-none my-8",
-          maxWidthStyles[maxWidth],
+          "relative w-full rounded-2xl bg-white shadow-xl border border-slate-200/80 my-8 z-10 outline-none transform transition-all animate-in zoom-in-95 duration-150",
+          maxWidths[maxWidth],
           className
         )}
       >
         {/* Header */}
         {(title || !preventClose) && (
-          <div className="flex items-start justify-between gap-4 mb-4">
-            {title && (
-              <h2
-                id={titleId}
-                className="text-lg font-bold tracking-tight text-slate-900 leading-snug"
-              >
-                {title}
-              </h2>
-            )}
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div>
+              {title && (
+                <h3
+                  id={titleId}
+                  className="text-lg font-bold tracking-tight text-slate-900"
+                >
+                  {title}
+                </h3>
+              )}
+              {description && (
+                <p id={descId} className="mt-1 text-xs text-slate-500">
+                  {description}
+                </p>
+              )}
+            </div>
+
             {!preventClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="ml-auto -mr-1 -mt-1 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
                 aria-label="Close dialog"
+                className="ml-auto inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
           </div>
         )}
 
-        {/* Optional Description */}
-        {description && (
-          <div id={descId} className="text-sm text-slate-500 mb-4 leading-relaxed">
-            {description}
-          </div>
-        )}
-
-        {/* Body Content */}
-        <div className="text-sm text-slate-700">{children}</div>
+        {/* Body */}
+        <div className="p-6 text-sm text-slate-600">{children}</div>
 
         {/* Footer */}
-        {footer && <div className="mt-6 flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-100">{footer}</div>}
+        {footer && (
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-3.5 rounded-b-2xl">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
 
   return createPortal(modalContent, document.body);
 };
-

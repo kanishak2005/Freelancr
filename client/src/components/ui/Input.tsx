@@ -46,9 +46,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
           >
-            {label} {required && <span className="text-red-500">*</span>}
+            {label} {required && <span className="text-rose-500">*</span>}
           </label>
         )}
 
@@ -70,13 +70,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={Boolean(error)}
             aria-describedby={mergedDescribedBy}
             className={clsx(
-              "w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition",
+              "w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all duration-150",
               leftIcon && "pl-10",
               rightIcon && "pr-10",
               error
-                ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
-                : "border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100",
-              disabled && "bg-slate-100 text-slate-400 cursor-not-allowed",
+                ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+                : "border-slate-300/90 hover:border-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100",
+              disabled && "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed",
               className
             )}
             {...props}
@@ -93,7 +93,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {error && (
-          <p id={errorId} className="mt-1.5 text-xs text-red-600 font-medium">
+          <p id={errorId} className="mt-1.5 text-xs text-rose-600 font-medium">
             {error}
           </p>
         )}
@@ -109,4 +109,3 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 
 Input.displayName = "Input";
-

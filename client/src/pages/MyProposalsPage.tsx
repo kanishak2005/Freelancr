@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -13,10 +13,13 @@ import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { Card, CardBody } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
+type FilterStatus = "all" | "pending" | "accepted" | "rejected" | "withdrawn";
+
 export default function MyProposalsPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [proposalToWithdraw, setProposalToWithdraw] = useState<Proposal | null>(null);
 
@@ -58,20 +61,51 @@ export default function MyProposalsPage() {
     }
   };
 
+  const filteredProposals = useMemo(() => {
+    if (statusFilter === "all") return proposals;
+    return proposals.filter((p) => p.status === statusFilter);
+  }, [proposals, statusFilter]);
+
+  const counts = useMemo(() => {
+    return {
+      all: proposals.length,
+      pending: proposals.filter((p) => p.status === "pending").length,
+      accepted: proposals.filter((p) => p.status === "accepted").length,
+      rejected: proposals.filter((p) => p.status === "rejected").length,
+      withdrawn: proposals.filter((p) => p.status === "withdrawn").length,
+    };
+  }, [proposals]);
+
+  const getStatusBadge = (status: Proposal["status"]) => {
+    switch (status) {
+      case "accepted":
+        return <Badge variant="success">Accepted into Contract</Badge>;
+      case "rejected":
+        return <Badge variant="danger">Declined</Badge>;
+      case "pending":
+        return <Badge variant="warning">Under Client Review</Badge>;
+      case "withdrawn":
+        return <Badge variant="neutral">Withdrawn</Badge>;
+      default:
+        return <Badge variant="neutral">{status}</Badge>;
+    }
+  };
+
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header Banner */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             My Submitted Proposals
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Monitor client responses, status changes, and track your active bids.
+            Monitor client responses, status changes, and track your active bids across open projects.
           </p>
         </div>
 
         <Link to="/jobs">
-          <Button variant="primary">
+          <Button variant="primary" size="md">
             <svg
               className="w-4 h-4 mr-1.5"
               fill="none"
@@ -85,106 +119,198 @@ export default function MyProposalsPage() {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            Explore More Jobs
+            Explore Marketplace Jobs
           </Button>
         </Link>
       </div>
 
-      {error && (
-        <div className="mb-6 rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex items-center justify-between">
-          <span>{error}</span>
+      {/* Status Filter Segmented Tabs */}
+      {proposals.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100 p-1 border border-slate-200/60 max-w-fit">
           <button
             type="button"
-            onClick={loadProposals}
-            className="text-xs font-semibold underline hover:text-rose-800"
+            onClick={() => setStatusFilter("all")}
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+              statusFilter === "all"
+                ? "bg-white text-slate-900 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
           >
-            Retry
+            All ({counts.all})
           </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("pending")}
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+              statusFilter === "pending"
+                ? "bg-white text-amber-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Pending ({counts.pending})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("accepted")}
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+              statusFilter === "accepted"
+                ? "bg-white text-emerald-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Accepted ({counts.accepted})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("rejected")}
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+              statusFilter === "rejected"
+                ? "bg-white text-rose-700 shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Declined ({counts.rejected})
+          </button>
+          {counts.withdrawn > 0 && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter("withdrawn")}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                statusFilter === "withdrawn"
+                  ? "bg-white text-slate-800 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Withdrawn ({counts.withdrawn})
+            </button>
+          )}
         </div>
       )}
 
+      {/* Error state */}
+      {error && (
+        <div className="mb-6 rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex items-center justify-between">
+          <span>{error}</span>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={loadProposals}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Loading Skeletons */}
       {loading ? (
         <div className="space-y-4">
-          <LoadingSkeleton className="h-32 w-full" count={3} />
+          <LoadingSkeleton className="h-44 w-full rounded-2xl" count={3} />
         </div>
       ) : proposals.length === 0 ? (
         <EmptyState
           title="No proposals submitted yet"
-          description="Find interesting technical projects and submit competitive proposals to get hired."
+          description="Find interesting technical projects on the marketplace and submit competitive proposals to get hired."
           action={{
             label: "Browse Open Jobs",
             href: "/jobs",
           }}
         />
+      ) : filteredProposals.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <p className="text-sm font-semibold text-slate-700">
+            No {statusFilter} proposals found.
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Try switching filter tabs to see your other bids.
+          </p>
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusFilter("all")}
+            >
+              Show All Proposals
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
-          {proposals.map((proposal) => {
+          {filteredProposals.map((proposal) => {
             const job = typeof proposal.job === "object" ? proposal.job : null;
 
             return (
-              <Card key={proposal._id} hoverable>
+              <Card key={proposal._id} hoverable className="border-slate-200/80 transition-all duration-200">
                 <CardBody className="p-5 sm:p-6">
+                  {/* Card Header: Title, Category & Status Badge */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-900">
-                        {job?.title || "Job Listing"}
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {job?.category && (
+                          <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 border border-indigo-100">
+                            {job.category}
+                          </span>
+                        )}
+                        <span className="text-xs text-slate-400">
+                          Submitted on{" "}
+                          {new Date(proposal.createdAt).toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+
+                      <h2 className="text-lg font-bold text-slate-900 hover:text-indigo-600 transition-colors">
+                        <Link to={`/proposals/${proposal._id}`}>
+                          {job?.title || "Job Listing"}
+                        </Link>
                       </h2>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        Submitted on{" "}
-                        {new Date(proposal.createdAt).toLocaleDateString("en-IN", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
                     </div>
 
-                    <Badge
-                      variant={
-                        proposal.status === "accepted"
-                          ? "success"
-                          : proposal.status === "rejected"
-                          ? "danger"
-                          : proposal.status === "pending"
-                          ? "warning"
-                          : "neutral"
-                      }
-                    >
-                      {proposal.status}
-                    </Badge>
+                    <div className="shrink-0">
+                      {getStatusBadge(proposal.status)}
+                    </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50/70 p-3.5 rounded-lg border border-slate-100">
+                  {/* Financial & Delivery Meta Grid */}
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50/80 p-4 rounded-xl border border-slate-100">
                     <div>
-                      <p className="text-xs text-slate-500 font-medium">Your Bid</p>
-                      <p className="mt-0.5 text-sm font-semibold text-slate-900">
+                      <p className="text-xs text-slate-500 font-medium">Your Bid Amount</p>
+                      <p className="mt-0.5 text-base font-bold text-slate-900">
                         ₹{proposal.bidAmount.toLocaleString("en-IN")}
                       </p>
                     </div>
 
                     <div>
                       <p className="text-xs text-slate-500 font-medium">Estimated Delivery</p>
-                      <p className="mt-0.5 text-sm font-semibold text-slate-900">
+                      <p className="mt-0.5 text-base font-semibold text-slate-900">
                         {proposal.deliveryTime} {proposal.deliveryTime === 1 ? "day" : "days"}
                       </p>
                     </div>
 
                     <div className="col-span-2 sm:col-span-1">
-                      <p className="text-xs text-slate-500 font-medium">Review Status</p>
-                      <p className="mt-0.5 text-sm font-medium capitalize text-slate-800">
-                        {proposal.status === "pending" ? "Awaiting client review" : proposal.status}
+                      <p className="text-xs text-slate-500 font-medium">Client Decision</p>
+                      <p className="mt-0.5 text-sm font-semibold capitalize text-slate-800">
+                        {proposal.status === "pending"
+                          ? "Awaiting review"
+                          : proposal.status === "accepted"
+                          ? "Contract active"
+                          : proposal.status}
                       </p>
                     </div>
                   </div>
 
+                  {/* Cover letter excerpt */}
                   <p className="mt-4 text-sm text-slate-600 line-clamp-2 leading-relaxed">
                     {proposal.coverLetter}
                   </p>
 
+                  {/* Card Actions Footer */}
                   <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                     <Link to={`/proposals/${proposal._id}`}>
                       <Button variant="outline" size="sm">
-                        View Proposal Details
+                        View Proposal Details →
                       </Button>
                     </Link>
 

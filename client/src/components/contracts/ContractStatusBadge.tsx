@@ -1,17 +1,20 @@
 import type { ContractStatus } from "../../services/contracts.api";
+import { Badge, type BadgeProps } from "../ui/Badge";
 
 interface ContractStatusBadgeProps {
   status: ContractStatus;
+  size?: "sm" | "md";
 }
 
 export default function ContractStatusBadge({
   status,
+  size = "sm",
 }: ContractStatusBadgeProps) {
-  const styles: Record<ContractStatus, string> = {
-    active: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
-    disputed: "bg-amber-100 text-amber-700",
+  const variantMap: Record<ContractStatus, BadgeProps["variant"]> = {
+    active: "primary",
+    completed: "success",
+    cancelled: "danger",
+    disputed: "warning",
   };
 
   const labels: Record<ContractStatus, string> = {
@@ -22,10 +25,8 @@ export default function ContractStatusBadge({
   };
 
   return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
+    <Badge variant={variantMap[status] || "neutral"} size={size}>
+      {labels[status] || status}
+    </Badge>
   );
 }

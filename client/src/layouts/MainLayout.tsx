@@ -122,8 +122,8 @@ export default function MainLayout() {
                       user.role === "admin"
                         ? "danger"
                         : user.role === "client"
-                        ? "primary"
-                        : "success"
+                          ? "primary"
+                          : "success"
                     }
                     size="sm"
                   >
@@ -187,7 +187,7 @@ export default function MainLayout() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Engine Active
               </span>
-              <span>PRD 16 Unified Navigation</span>
+              <span></span>
             </div>
           </div>
         </footer>

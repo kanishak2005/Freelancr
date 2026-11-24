@@ -10,6 +10,7 @@ import {
   type Job,
 } from "../services/jobs.api";
 import { useAppSelector } from "../store/hooks";
+import { Button } from "../components/ui/Button";
 
 const CATEGORIES = [
   "All Categories",
@@ -185,26 +186,26 @@ export default function JobsPage() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header Banner */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-6">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             Marketplace Discovery
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-slate-500">
             Discover verified jobs, transparent match scores, and direct client trust metrics.
           </p>
         </div>
 
         {/* Tab switch: All Jobs vs Saved Jobs */}
         {user && (
-          <div className="inline-flex rounded-xl bg-gray-100 p-1">
+          <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/60">
             <button
               type="button"
               onClick={() => updateParam("tab", "all")}
-              className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${
+              className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
                 tab !== "saved"
-                  ? "bg-white text-gray-900 shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               All Marketplace Jobs
@@ -212,10 +213,10 @@ export default function JobsPage() {
             <button
               type="button"
               onClick={() => updateParam("tab", "saved")}
-              className={`rounded-lg px-4 py-2 text-xs font-semibold transition flex items-center gap-1.5 ${
+              className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 tab === "saved"
                   ? "bg-white text-indigo-600 shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -229,14 +230,14 @@ export default function JobsPage() {
 
       {/* Floating Status Notification */}
       {statusMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-gray-900 px-4 py-3 text-xs font-medium text-white shadow-xl animate-fade-in">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-xs font-medium text-white shadow-xl animate-fade-in border border-slate-800">
           {statusMessage}
         </div>
       )}
 
       {/* Search & Filters Section (Only in "all" tab) */}
       {tab !== "saved" && (
-        <div className="mb-8 space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="mb-8 space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
           {/* Search bar */}
           <form onSubmit={handleSearchSubmit} className="flex gap-2">
             <div className="relative flex-1">
@@ -245,10 +246,10 @@ export default function JobsPage() {
                 value={inputKeyword}
                 onChange={(e) => setInputKeyword(e.target.value)}
                 placeholder="Search jobs by title, skill, or keywords (e.g. React, Node.js, UI/UX)..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 pl-10 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 pl-10 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
               />
               <svg
-                className="absolute left-3.5 top-3.5 h-4 w-4 text-gray-400"
+                className="absolute left-3.5 top-3 h-4 w-4 text-slate-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -267,19 +268,16 @@ export default function JobsPage() {
                     setInputKeyword("");
                     updateParam("q", "");
                   }}
-                  className="absolute right-3.5 top-3.5 text-xs text-gray-400 hover:text-gray-600"
+                  className="absolute right-3.5 top-3 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   Clear
                 </button>
               )}
             </div>
 
-            <button
-              type="submit"
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition"
-            >
+            <Button type="submit" variant="primary" size="md">
               Search
-            </button>
+            </Button>
           </form>
 
           {/* Filter dropdowns */}
@@ -288,7 +286,7 @@ export default function JobsPage() {
             <select
               value={selectedCategory}
               onChange={(e) => updateParam("category", e.target.value)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 outline-none hover:border-gray-300 focus:border-indigo-500"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-indigo-500 transition-colors"
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat} value={cat === "All Categories" ? "" : cat}>
@@ -301,7 +299,7 @@ export default function JobsPage() {
             <select
               value={selectedExp}
               onChange={(e) => updateParam("experienceLevel", e.target.value)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 outline-none hover:border-gray-300 focus:border-indigo-500"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-indigo-500 transition-colors"
             >
               {EXPERIENCE_LEVELS.map((exp) => (
                 <option key={exp.value} value={exp.value}>
@@ -314,7 +312,7 @@ export default function JobsPage() {
             <select
               value={selectedBudgetType}
               onChange={(e) => updateParam("budgetType", e.target.value)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 outline-none hover:border-gray-300 focus:border-indigo-500"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-indigo-500 transition-colors"
             >
               {BUDGET_TYPES.map((bt) => (
                 <option key={bt.value} value={bt.value}>
@@ -325,11 +323,11 @@ export default function JobsPage() {
 
             {/* Sort Order */}
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-gray-400">Sort by:</span>
+              <span className="text-xs text-slate-400">Sort by:</span>
               <select
                 value={selectedSort}
                 onChange={(e) => updateParam("sort", e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 outline-none hover:border-gray-300 focus:border-indigo-500"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none hover:border-slate-300 focus:border-indigo-500 transition-colors"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -344,7 +342,7 @@ export default function JobsPage() {
               <button
                 type="button"
                 onClick={clearAllFilters}
-                className="text-xs font-medium text-rose-600 hover:text-rose-800 transition underline underline-offset-2 ml-2"
+                className="text-xs font-medium text-rose-600 hover:text-rose-800 transition-colors underline underline-offset-2 ml-2 cursor-pointer"
               >
                 Reset all filters
               </button>
@@ -357,13 +355,14 @@ export default function JobsPage() {
       {isError && (
         <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-5 flex items-center justify-between">
           <p className="text-sm text-rose-700">{errorMessage}</p>
-          <button
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
             onClick={() => refetch()}
-            className="rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 transition"
           >
             Retry
-          </button>
+          </Button>
         </div>
       )}
 
@@ -373,14 +372,14 @@ export default function JobsPage() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-64 animate-pulse rounded-2xl bg-gray-100 p-6"
+              className="h-64 animate-pulse rounded-2xl bg-slate-100 border border-slate-200/60 p-6"
             />
           ))}
         </div>
       ) : jobs.length === 0 ? (
         /* Empty State */
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-400">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100">
             <svg
               className="h-6 w-6"
               fill="none"
@@ -395,22 +394,25 @@ export default function JobsPage() {
               />
             </svg>
           </div>
-          <h2 className="mt-3 text-base font-bold text-gray-900">
+          <h2 className="mt-3 text-base font-bold text-slate-900">
             {tab === "saved" ? "No saved jobs yet" : "No matching jobs found"}
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
             {tab === "saved"
               ? "Bookmark jobs on the marketplace to easily access and review them later."
               : "Try adjusting your search criteria, category, or experience filters."}
           </p>
           {hasActiveFilters && tab !== "saved" && (
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="mt-4 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
-            >
-              Clear filters
-            </button>
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={clearAllFilters}
+              >
+                Clear filters
+              </Button>
+            </div>
           )}
         </div>
       ) : (

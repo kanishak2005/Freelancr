@@ -139,31 +139,34 @@ export default function JobProposalsPage() {
     user?.id === job?.client?._id;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-      {/* Breadcrumb / Back Link */}
-      <div className="mb-6 flex items-center justify-between">
+    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
+      {/* 1. Breadcrumb / Navigation Bar */}
+      <div className="flex items-center justify-between">
         <Link
           to="/my-jobs"
-          className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Back to My Job Postings
+          <span>Back to My Job Postings</span>
         </Link>
 
         {id && (
           <Link to={`/jobs/${id}`}>
-            <Button variant="ghost" size="sm">
-              View Public Listing
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <span>View Public Listing</span>
+              <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
             </Button>
           </Link>
         )}
       </div>
 
-      {/* Job Context Header */}
-      <div className="mb-8 bg-white rounded-xl border border-slate-200/80 p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+      {/* 2. Job Context Header Card */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-100 pb-6">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
@@ -177,36 +180,72 @@ export default function JobProposalsPage() {
                     ? "primary"
                     : "neutral"
                 }
+                size="md"
               >
-                {job?.status}
+                {job?.status === "in_progress" ? "In Progress" : job?.status || "open"}
               </Badge>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               {job?.title || "Job Listing"}
             </h1>
+            <p className="mt-1 text-xs text-slate-400">
+              Review and evaluate competitive bids submitted by freelancers for this project.
+            </p>
+          </div>
+        </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-              <span className="font-medium text-slate-700">Category: {job?.category}</span>
-              <span>•</span>
-              <span>
-                Budget: {job?.budget !== undefined ? `₹${job.budget.toLocaleString("en-IN")}` : "Flexible"} ({job?.budgetType || "fixed"})
-              </span>
-              <span>•</span>
-              <span>Total Received: {proposals.length} proposal{proposals.length === 1 ? "" : "s"}</span>
-            </div>
+        {/* Job Metadata Tiles */}
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Category</span>
+            <span className="mt-0.5 block text-sm font-bold text-slate-900 truncate">
+              {job?.category || "General"}
+            </span>
+            <span className="text-[11px] text-slate-500">Domain</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Target Budget</span>
+            <span className="mt-0.5 block text-sm font-bold text-slate-900">
+              {job?.budget !== undefined ? `₹${job.budget.toLocaleString("en-IN")}` : "Flexible"}
+            </span>
+            <span className="text-[11px] text-slate-500 capitalize">{job?.budgetType || "Fixed"}</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Workplace</span>
+            <span className="mt-0.5 block text-sm font-bold text-slate-900">
+              {job?.isRemote ? "Remote" : "On-site"}
+            </span>
+            <span className="text-[11px] text-slate-500 truncate block">
+              {job?.isRemote ? "Worldwide" : job?.location || "Local"}
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Proposals</span>
+            <span className="mt-0.5 block text-sm font-bold text-slate-900">
+              {proposals.length}
+            </span>
+            <span className="text-[11px] text-slate-500">Applicant Submissions</span>
           </div>
         </div>
       </div>
 
-      {/* Proposals Comparison List */}
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Received Proposals ({proposals.length})
-          </h2>
-          <span className="text-xs text-slate-500">
-            Select a proposal to review cover letter and create a contract.
+      {/* 3. Proposals Comparison List */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-900">
+              Received Proposals
+            </h2>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200/60">
+              {proposals.length}
+            </span>
+          </div>
+          <span className="text-xs text-slate-500 hidden sm:inline">
+            Compare bids, review cover letters, and select an applicant to form a contract.
           </span>
         </div>
 
@@ -227,16 +266,16 @@ export default function JobProposalsPage() {
 
               return (
                 <Card key={proposal._id} hoverable>
-                  <CardBody className="p-5 sm:p-6">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                      {/* Freelancer Profile & Info */}
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-lg uppercase shrink-0">
+                  <CardBody className="p-5 sm:p-6 space-y-5">
+                    {/* Header: Freelancer & Status */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-base uppercase shrink-0 overflow-hidden">
                           {freelancer?.avatar ? (
                             <img
                               src={freelancer.avatar}
                               alt={freelancer.fullName}
-                              className="w-full h-full rounded-full object-cover"
+                              className="w-full h-full object-cover"
                             />
                           ) : (
                             freelancer?.fullName?.[0] || "F"
@@ -245,7 +284,7 @@ export default function JobProposalsPage() {
 
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="text-base font-semibold text-slate-900">
+                            <h3 className="text-base font-bold text-slate-900">
                               {freelancer?.fullName || "Freelancer"}
                             </h3>
                             <span className="text-xs text-slate-400">
@@ -253,7 +292,7 @@ export default function JobProposalsPage() {
                             </span>
                           </div>
 
-                          <p className="mt-0.5 text-xs text-slate-500">
+                          <p className="text-xs text-slate-400 mt-0.5">
                             Submitted on{" "}
                             {new Date(proposal.createdAt).toLocaleDateString("en-IN", {
                               year: "numeric",
@@ -265,63 +304,73 @@ export default function JobProposalsPage() {
                       </div>
 
                       {/* Status Badge */}
-                      <div>
-                        <Badge
-                          variant={
-                            proposal.status === "accepted"
-                              ? "success"
-                              : proposal.status === "rejected"
-                              ? "danger"
-                              : proposal.status === "pending"
-                              ? "warning"
-                              : "neutral"
-                          }
-                        >
-                          {proposal.status}
-                        </Badge>
-                      </div>
+                      <Badge
+                        variant={
+                          proposal.status === "accepted"
+                            ? "success"
+                            : proposal.status === "rejected"
+                            ? "danger"
+                            : proposal.status === "pending"
+                            ? "warning"
+                            : "neutral"
+                        }
+                        size="md"
+                      >
+                        {proposal.status === "accepted"
+                          ? "Accepted"
+                          : proposal.status === "rejected"
+                          ? "Rejected"
+                          : proposal.status === "pending"
+                          ? "Pending Review"
+                          : proposal.status}
+                      </Badge>
                     </div>
 
-                    {/* Proposal Terms Overview */}
-                    <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50/70 p-4 rounded-lg border border-slate-100">
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium">Proposed Bid</p>
-                        <p className="mt-0.5 text-base font-bold text-slate-900">
+                    {/* Proposal Terms Metric Grid (Bid, Timeline, Action Status) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Proposed Bid</span>
+                        <span className="mt-0.5 block text-base font-bold text-slate-900">
                           ₹{proposal.bidAmount.toLocaleString("en-IN")}
-                        </p>
+                        </span>
+                        <span className="text-[11px] text-slate-500">Fixed milestone</span>
                       </div>
 
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium">Delivery Timeline</p>
-                        <p className="mt-0.5 text-base font-semibold text-slate-900">
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Delivery Timeline</span>
+                        <span className="mt-0.5 block text-base font-bold text-slate-900">
                           {proposal.deliveryTime} {proposal.deliveryTime === 1 ? "day" : "days"}
-                        </p>
+                        </span>
+                        <span className="text-[11px] text-slate-500">Estimated delivery</span>
                       </div>
 
-                      <div className="col-span-2 sm:col-span-1">
-                        <p className="text-xs text-slate-500 font-medium">Next Action</p>
-                        <p className="mt-0.5 text-xs text-slate-600">
+                      <div className="col-span-2 sm:col-span-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Current Status</span>
+                        <span className="mt-0.5 block text-xs font-semibold text-slate-800">
                           {isAccepted
-                            ? "Contract created"
+                            ? "Contract Initiated"
                             : isPending && isJobOpen
-                            ? "Eligible for contract"
-                            : "No active action"}
-                        </p>
+                            ? "Eligible for Acceptance"
+                            : "No Active Action"}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {isAccepted ? "Active contract" : isPending ? "Awaiting decision" : "Closed"}
+                        </span>
                       </div>
                     </div>
 
                     {/* Cover Letter Snippet */}
-                    <div className="mt-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                        Cover Letter
-                      </p>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed line-clamp-3 bg-white p-3 rounded border border-slate-100">
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Cover Letter & Pitch
+                      </span>
+                      <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed line-clamp-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100 font-normal">
                         {proposal.coverLetter}
-                      </p>
+                      </div>
                     </div>
 
                     {/* Action Footer */}
-                    <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link to={`/proposals/${proposal._id}`}>
                           <Button variant="outline" size="sm">
@@ -334,13 +383,13 @@ export default function JobProposalsPage() {
                           freelancer?._id &&
                           freelancer._id !== user?.id && (
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              className="flex items-center gap-1.5"
+                              className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900"
                               onClick={() => navigate(`/chat/${freelancer._id}`)}
                             >
                               <svg
-                                className="w-3.5 h-3.5 text-slate-500"
+                                className="w-3.5 h-3.5 text-slate-400"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -349,7 +398,7 @@ export default function JobProposalsPage() {
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  strokeWidth={1.5}
+                                  strokeWidth={1.8}
                                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                                 />
                               </svg>
@@ -369,8 +418,9 @@ export default function JobProposalsPage() {
                       )}
 
                       {isAccepted && (
-                        <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                          Accepted & In Progress
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200/80">
+                          <span>✓</span>
+                          <span>Accepted & Contract In Progress</span>
                         </span>
                       )}
                     </div>
@@ -380,9 +430,9 @@ export default function JobProposalsPage() {
             })}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Confirmation & Contract Creation Dialog Modal */}
+      {/* 4. Confirmation & Contract Creation Dialog Modal */}
       {selectedProposal && (
         <div
           role="dialog"
@@ -391,6 +441,7 @@ export default function JobProposalsPage() {
           className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
         >
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
             <div className="p-6 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <h3 id="accept-modal-title" className="text-lg font-bold text-slate-900">
@@ -399,7 +450,8 @@ export default function JobProposalsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedProposal(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors"
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                  aria-label="Close dialog"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -411,16 +463,23 @@ export default function JobProposalsPage() {
               </p>
             </div>
 
-            <div className="p-6 space-y-4">
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
               {actionError && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700">
-                  {actionError}
+                <div
+                  role="alert"
+                  className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-xs font-medium text-rose-700 flex items-start gap-2.5"
+                >
+                  <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <span>{actionError}</span>
                 </div>
               )}
 
-              {/* Proposal Summary */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-xs">
-                <div className="flex justify-between">
+              {/* Proposal Summary Table */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2.5 text-xs">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-500">Selected Freelancer:</span>
                   <span className="font-semibold text-slate-900">
                     {typeof selectedProposal.freelancer === "object"
@@ -428,19 +487,19 @@ export default function JobProposalsPage() {
                       : "Freelancer"}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-500">Agreed Contract Amount:</span>
                   <span className="font-bold text-slate-900 text-sm">
                     ₹{selectedProposal.bidAmount.toLocaleString("en-IN")}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-500">Delivery Timeline:</span>
-                  <span className="font-medium text-slate-900">
+                  <span className="font-semibold text-slate-900">
                     {selectedProposal.deliveryTime} days
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center border-t border-slate-200/60 pt-2">
                   <span className="text-slate-500">Associated Job:</span>
                   <span className="font-medium text-slate-900 truncate max-w-xs">
                     {job?.title}
@@ -457,41 +516,58 @@ export default function JobProposalsPage() {
                   <button
                     type="button"
                     onClick={() => setExecutionMode("simple")}
-                    className={`p-3 text-left rounded-xl border transition-all text-xs ${
+                    className={`p-3.5 text-left rounded-xl border transition-all text-xs cursor-pointer ${
                       executionMode === "simple"
-                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600"
-                        : "border-slate-200 hover:border-slate-300 text-slate-700"
+                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-2 ring-indigo-600/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white text-slate-700"
                     }`}
                   >
-                    <p className="font-bold">Simple Delivery</p>
-                    <p className="mt-1 text-slate-500 text-[11px]">
-                      One-time deliverable review and total payment release.
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-bold">Simple Delivery</p>
+                      {executionMode === "simple" && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                      )}
+                    </div>
+                    <p className="text-slate-500 text-[11px] leading-relaxed">
+                      One-time deliverable review and total payment release upon approval.
                     </p>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setExecutionMode("milestone")}
-                    className={`p-3 text-left rounded-xl border transition-all text-xs ${
+                    className={`p-3.5 text-left rounded-xl border transition-all text-xs cursor-pointer ${
                       executionMode === "milestone"
-                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600"
-                        : "border-slate-200 hover:border-slate-300 text-slate-700"
+                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-2 ring-indigo-600/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white text-slate-700"
                     }`}
                   >
-                    <p className="font-bold">Milestone-Based</p>
-                    <p className="mt-1 text-slate-500 text-[11px]">
-                      Phased deliverables with structured milestone funding.
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-bold">Milestone-Based</p>
+                      {executionMode === "milestone" && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                      )}
+                    </div>
+                    <p className="text-slate-500 text-[11px] leading-relaxed">
+                      Phased deliverables with structured milestone funding releases.
                     </p>
                   </button>
                 </div>
               </div>
 
-              {/* Financial Invariant Explanation */}
-              <div className="rounded-lg bg-amber-50/70 border border-amber-200/80 p-3 text-xs text-amber-800 leading-relaxed">
-                <span className="font-semibold">Trustless Funding Invariant:</span> Accepting this proposal creates a pending-funding contract and locks the job from other proposals. You will be redirected immediately to deposit the agreed amount into platform hold via Razorpay before the freelancer can begin work.
+              {/* Financial Invariant & Escrow Warning */}
+              <div className="rounded-xl bg-amber-50/80 border border-amber-200/80 p-4 text-xs text-amber-900 leading-relaxed flex items-start gap-2.5">
+                <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <span className="font-bold block mb-0.5">Trustless Funding Invariant:</span>
+                  <span>Accepting this proposal creates a pending-funding contract and locks the job from other proposals. You will be redirected immediately to deposit the agreed amount into platform hold via Razorpay before the freelancer can begin work.</span>
+                </div>
               </div>
             </div>
 
+            {/* Modal Footer */}
             <div className="p-6 bg-slate-50/70 border-t border-slate-100 flex items-center justify-end gap-3">
               <Button
                 variant="outline"

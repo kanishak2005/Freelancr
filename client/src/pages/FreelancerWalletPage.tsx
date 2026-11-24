@@ -119,8 +119,8 @@ export default function FreelancerWalletPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-      {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header Banner */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             Freelancer Earnings & Wallet
@@ -129,17 +129,17 @@ export default function FreelancerWalletPage() {
             Authoritative withdrawable balances, approved contract earnings, and payout requests.
           </p>
         </div>
-        <div>
-          <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
+        <div className="flex items-center gap-2">
+          <Badge variant="success" size="md">
             Integer Paise Precision
-          </span>
+          </Badge>
         </div>
       </div>
 
       {isError && (
-        <div className="mb-6 rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex items-center justify-between">
+        <div className="mb-6 rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex items-center justify-between">
           <span>{(error as any)?.response?.data?.message || "Failed to load wallet data."}</span>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+          <Button variant="danger" size="sm" onClick={() => refetch()}>
             Retry
           </Button>
         </div>
@@ -147,30 +147,30 @@ export default function FreelancerWalletPage() {
 
       {isLoading ? (
         <div className="space-y-6">
-          <LoadingSkeleton className="h-40 w-full" />
-          <LoadingSkeleton className="h-64 w-full" />
+          <LoadingSkeleton className="h-40 w-full rounded-2xl" />
+          <LoadingSkeleton className="h-64 w-full rounded-2xl" />
         </div>
       ) : wallet ? (
         <div className="space-y-8">
           {/* Balance Cards Grid */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-indigo-100 bg-linear-to-br from-indigo-50/60 to-white p-5 shadow-xs">
+            <div className="rounded-2xl border border-indigo-200/80 bg-linear-to-br from-indigo-50/70 via-indigo-50/30 to-white p-5 shadow-xs">
               <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">
                 Available to Withdraw
               </p>
               <p className="mt-2 text-3xl font-extrabold text-indigo-950">
                 ₹{wallet.availableBalance.toLocaleString("en-IN")}
               </p>
-              <p className="mt-1 text-xs text-indigo-600">
+              <p className="mt-1 text-xs text-indigo-600 font-medium">
                 Liquid earnings ready for cashout
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Processing Cashouts
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-800">
+              <p className="mt-2 text-2xl font-bold text-slate-900">
                 ₹{wallet.reservedCashout.toLocaleString("en-IN")}
               </p>
               <p className="mt-1 text-xs text-slate-400">
@@ -178,7 +178,7 @@ export default function FreelancerWalletPage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Lifetime Approved Earnings
               </p>
@@ -190,11 +190,11 @@ export default function FreelancerWalletPage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Total Disbursed
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-800">
+              <p className="mt-2 text-2xl font-bold text-slate-900">
                 ₹{wallet.totalWithdrawn.toLocaleString("en-IN")}
               </p>
               <p className="mt-1 text-xs text-slate-400">
@@ -204,8 +204,8 @@ export default function FreelancerWalletPage() {
           </div>
 
           {/* Cashout Action Panel */}
-          <Card className="border-indigo-100/80 shadow-xs">
-            <CardBody className="p-6">
+          <Card className="border-slate-200/80 shadow-xs">
+            <CardBody className="p-6 sm:p-8">
               <div className="max-w-xl">
                 <h3 className="text-lg font-bold text-slate-900">
                   Request Partial or Full Wallet Cashout
@@ -215,13 +215,13 @@ export default function FreelancerWalletPage() {
                 </p>
 
                 {cashoutSuccess && (
-                  <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800">
+                  <div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-800 font-medium">
                     {cashoutSuccess}
                   </div>
                 )}
 
                 {cashoutError && (
-                  <div className="mt-4 rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">
+                  <div className="mt-4 rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700 font-medium">
                     {cashoutError}
                   </div>
                 )}
@@ -229,11 +229,11 @@ export default function FreelancerWalletPage() {
                 <form onSubmit={handleCashoutSubmit} className="mt-5 space-y-4">
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                      Cashout Amount (₹ INR)
+                      Cashout Amount (₹ INR) *
                     </label>
-                    <div className="relative rounded-lg shadow-2xs">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <span className="text-slate-500 sm:text-sm">₹</span>
+                    <div className="relative rounded-xl shadow-2xs">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                        <span className="text-slate-500 text-sm font-semibold">₹</span>
                       </div>
                       <input
                         type="number"
@@ -241,16 +241,16 @@ export default function FreelancerWalletPage() {
                         step="any"
                         value={cashoutAmount}
                         onChange={(e) => setCashoutAmount(e.target.value)}
-                        placeholder={`Max: ${wallet.availableBalance}`}
+                        placeholder={`Max available: ${wallet.availableBalance}`}
                         disabled={wallet.availableBalance <= 0 || cashoutMutation.isPending}
-                        className="block w-full rounded-lg border border-slate-300 pl-7 pr-12 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 disabled:opacity-50"
+                        className="block w-full rounded-xl border border-slate-300 pl-8 pr-16 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 disabled:opacity-50 disabled:bg-slate-50"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                         <button
                           type="button"
                           onClick={() => setCashoutAmount(String(wallet.availableBalance))}
                           disabled={wallet.availableBalance <= 0 || cashoutMutation.isPending}
-                          className="rounded px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
+                          className="rounded-lg px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 disabled:opacity-50 cursor-pointer"
                         >
                           MAX
                         </button>
@@ -269,11 +269,11 @@ export default function FreelancerWalletPage() {
                       onChange={(e) => setBeneficiaryNotes(e.target.value)}
                       placeholder="e.g. Bank account / memo for administrator review"
                       disabled={wallet.availableBalance <= 0 || cashoutMutation.isPending}
-                      className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 disabled:opacity-50"
+                      className="block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 disabled:opacity-50 disabled:bg-slate-50"
                     />
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
                     <Button
                       type="submit"
                       variant="primary"
@@ -304,14 +304,14 @@ export default function FreelancerWalletPage() {
             </div>
 
             {isCashoutsLoading ? (
-              <LoadingSkeleton className="h-28 w-full" />
+              <LoadingSkeleton className="h-28 w-full rounded-2xl" />
             ) : !cashoutsData?.data || cashoutsData.data.length === 0 ? (
               <EmptyState
                 title="No cashout requests yet"
                 description="Submitted partial requests will be tracked here individually with live review statuses."
               />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                     <thead className="bg-slate-50/75 text-xs font-semibold uppercase text-slate-500">
@@ -330,7 +330,7 @@ export default function FreelancerWalletPage() {
                           <td className="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-600">
                             {req.referenceId}
                           </td>
-                          <td className="whitespace-nowrap px-5 py-4 font-semibold text-slate-900">
+                          <td className="whitespace-nowrap px-5 py-4 font-bold text-slate-900">
                             ₹{req.amount.toLocaleString("en-IN")}
                           </td>
                           <td className="whitespace-nowrap px-5 py-4">
@@ -386,15 +386,13 @@ export default function FreelancerWalletPage() {
 
           {/* Wallet Transaction Ledger */}
           <div>
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  Wallet Transaction History
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Append-only immutable record of wallet credits, reservations, and disbursements.
-                </p>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-lg font-bold text-slate-900">
+                Wallet Transaction History
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Append-only immutable record of wallet credits, reservations, and disbursements.
+              </p>
             </div>
 
             {transactions.length === 0 ? (
@@ -403,7 +401,7 @@ export default function FreelancerWalletPage() {
                 description="Once a contract completes and the administrator approves earnings release, credits will appear here."
               />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                     <thead className="bg-slate-50/75 text-xs font-semibold uppercase text-slate-500">
@@ -421,11 +419,11 @@ export default function FreelancerWalletPage() {
                           <td className="whitespace-nowrap px-5 py-4">
                             {getEventBadge(tx.eventType)}
                           </td>
-                          <td className="whitespace-nowrap px-5 py-4 font-semibold text-slate-900">
+                          <td className="whitespace-nowrap px-5 py-4 font-bold text-slate-900">
                             {tx.eventType === "cashout_requested" ? (
                               <span className="text-rose-600">-₹{tx.amount.toLocaleString("en-IN")}</span>
                             ) : (
-                              <span className="text-emerald-600">+₹{tx.amount.toLocaleString("en-IN")}</span>
+                              <span className="text-emerald-700">+₹{tx.amount.toLocaleString("en-IN")}</span>
                             )}
                           </td>
                           <td className="px-5 py-4 text-xs text-slate-700 max-w-sm">

@@ -3,7 +3,10 @@ import {
   type ContractMilestone,
   createContractMilestone,
 } from "../../services/contracts.api";
-
+import { Button } from "../ui/Button";
+import { Badge, type BadgeProps } from "../ui/Badge";
+import { Input } from "../ui/Input";
+import { Textarea } from "../ui/Textarea";
 
 interface MilestoneSectionProps {
   contractId: string;
@@ -61,180 +64,169 @@ export const MilestoneSection: React.FC<MilestoneSectionProps> = ({
   };
 
   const getStatusBadge = (status: ContractMilestone["status"]) => {
-    const map: Record<string, { bg: string; text: string }> = {
-      planned: { bg: "bg-gray-100", text: "text-gray-700" },
-      in_progress: { bg: "bg-blue-100", text: "text-blue-700" },
-      submitted: { bg: "bg-yellow-100", text: "text-yellow-800" },
-      change_requested: { bg: "bg-orange-100", text: "text-orange-800" },
-      approved: { bg: "bg-green-100", text: "text-green-800" },
-      cancelled: { bg: "bg-red-100", text: "text-red-700" },
+    const map: Record<ContractMilestone["status"], { variant: BadgeProps["variant"]; label: string }> = {
+      planned: { variant: "neutral", label: "Planned" },
+      in_progress: { variant: "primary", label: "In Progress" },
+      submitted: { variant: "warning", label: "Submitted" },
+      change_requested: { variant: "danger", label: "Changes Requested" },
+      approved: { variant: "success", label: "Approved" },
+      cancelled: { variant: "neutral", label: "Cancelled" },
     };
 
-    const config = map[status] || { bg: "bg-gray-100", text: "text-gray-700" };
+    const config = map[status] || { variant: "neutral", label: status };
     return (
-      <span
-        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.bg} ${config.text}`}
-      >
-        {status.replace("_", " ").toUpperCase()}
-      </span>
+      <Badge variant={config.variant} size="sm">
+        {config.label}
+      </Badge>
     );
   };
 
   return (
-    <div className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Contract Milestones</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">Contract Milestones</h2>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500">
             Ordered deliverable phases and stage-based budget allocation.
           </p>
         </div>
 
         {isClient && !showCreate && (
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => {
               setSequence(milestones.length + 1);
               setShowCreate(true);
             }}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
           >
             + Add Milestone
-          </button>
+          </Button>
         )}
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs sm:text-sm text-rose-700">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+        <div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs sm:text-sm text-emerald-800 font-semibold">
           {success}
         </div>
       )}
 
       {showCreate && (
-        <form onSubmit={handleCreate} className="mt-6 rounded-lg border bg-gray-50 p-5">
-          <h3 className="font-semibold text-gray-900">Create New Milestone</h3>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <form onSubmit={handleCreate} className="mt-6 rounded-xl border border-slate-200/80 bg-slate-50/70 p-5 sm:p-6 space-y-4">
+          <h3 className="text-sm font-bold text-slate-900">Create New Milestone Phase</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-gray-700">
-                Title *
-              </label>
-              <input
+              <Input
+                label="Title *"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Phase 1: High Fidelity Prototype"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700">
-                Amount (INR) *
-              </label>
-              <input
+              <Input
+                label="Amount (INR) *"
                 type="number"
                 min="1"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
                 placeholder="e.g. 5000"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700">
-                Sequence Order *
-              </label>
-              <input
+              <Input
+                label="Sequence Order *"
                 type="number"
                 min="1"
                 value={sequence}
                 onChange={(e) => setSequence(Number(e.target.value))}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700">
-                Target Due Date
-              </label>
-              <input
+              <Input
+                label="Target Due Date"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="mt-4">
-            <label className="block text-xs font-medium text-gray-700">
-              Description / Deliverable Criteria
-            </label>
-            <textarea
+          <div>
+            <Textarea
+              label="Description / Deliverable Criteria"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none"
+              placeholder="Specify the deliverable goals for this milestone phase..."
             />
           </div>
 
-          <div className="mt-4 flex justify-end gap-3">
-            <button
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setShowCreate(false)}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={submitting}
-              className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              isLoading={submitting}
             >
-              {submitting ? "Saving..." : "Save Milestone"}
-            </button>
+              Save Milestone
+            </Button>
           </div>
         </form>
       )}
 
-      <div className="mt-6 divide-y">
+      <div className="mt-6 divide-y divide-slate-100">
         {milestones.length === 0 ? (
-          <div className="py-6 text-center text-sm text-gray-500">
+          <div className="py-8 text-center text-xs sm:text-sm text-slate-500">
             No milestones created for this contract yet.
           </div>
         ) : (
           milestones.map((m) => (
-            <div key={m._id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-800">
+            <div key={m._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4.5">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-700">
                     {m.sequence}
                   </span>
-                  <span className="font-semibold text-gray-900">{m.title}</span>
+                  <span className="font-bold text-slate-900 text-sm sm:text-base">{m.title}</span>
                   {getStatusBadge(m.status)}
                 </div>
                 {m.description && (
-                  <p className="mt-1 pl-9 text-xs text-gray-500">{m.description}</p>
+                  <p className="mt-1 pl-8 text-xs text-slate-500 leading-relaxed">{m.description}</p>
                 )}
-                <div className="mt-1 pl-9 flex gap-4 text-xs text-gray-400">
-                  {m.dueDate && <span>Due: {new Date(m.dueDate).toLocaleDateString()}</span>}
-                  {m.approvedAt && <span>Approved: {new Date(m.approvedAt).toLocaleDateString()}</span>}
+                <div className="mt-1.5 pl-8 flex flex-wrap gap-4 text-[11px] text-slate-400 font-medium">
+                  {m.dueDate && <span>Target Due: {new Date(m.dueDate).toLocaleDateString("en-IN")}</span>}
+                  {m.approvedAt && <span className="text-emerald-700 font-semibold">Approved: {new Date(m.approvedAt).toLocaleDateString("en-IN")}</span>}
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-base font-bold text-gray-900">
+              <div className="sm:text-right shrink-0 pl-8 sm:pl-0">
+                <span className="block text-sm sm:text-base font-bold text-slate-900">
                   ₹{m.amount.toLocaleString("en-IN")}
                 </span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">Phase Allocation</span>
               </div>
             </div>
           ))

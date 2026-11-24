@@ -11,6 +11,8 @@ import { createContract } from "../services/contracts.api";
 import { useAppSelector } from "../store/hooks";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Textarea } from "../components/ui/Textarea";
 import { Card, CardBody } from "../components/ui/Card";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -97,6 +99,16 @@ export default function ProposalDetailsPage() {
       return;
     }
 
+    if (!bidAmount || Number(bidAmount) <= 0) {
+      setFormError("Please enter a valid positive bid amount.");
+      return;
+    }
+
+    if (!deliveryTime || Number(deliveryTime) <= 0) {
+      setFormError("Please enter a valid positive delivery timeline.");
+      return;
+    }
+
     try {
       setSaving(true);
       setFormError("");
@@ -139,8 +151,8 @@ export default function ProposalDetailsPage() {
     return (
       <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <LoadingSkeleton className="h-6 w-32 mb-4" />
-        <LoadingSkeleton className="h-40 w-full mb-6" />
-        <LoadingSkeleton className="h-64 w-full" />
+        <LoadingSkeleton className="h-40 w-full mb-6 rounded-2xl" />
+        <LoadingSkeleton className="h-64 w-full rounded-2xl" />
       </main>
     );
   }
@@ -152,7 +164,7 @@ export default function ProposalDetailsPage() {
 
     return (
       <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 mb-4">
+        <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 mb-4">
           {errorMsg}
         </div>
         <Link to="/my-proposals">
@@ -216,7 +228,7 @@ export default function ProposalDetailsPage() {
         {isClient ? (
           <Link
             to={job ? `/jobs/${job._id}/proposals` : "/my-jobs"}
-            className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
+            className="text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -226,7 +238,7 @@ export default function ProposalDetailsPage() {
         ) : (
           <Link
             to="/my-proposals"
-            className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
+            className="text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -264,7 +276,7 @@ export default function ProposalDetailsPage() {
           {job && (
             <Link to={`/jobs/${job._id}`}>
               <Button variant="ghost" size="sm">
-                View Public Job
+                View Public Job ↗
               </Button>
             </Link>
           )}
@@ -272,13 +284,13 @@ export default function ProposalDetailsPage() {
       </div>
 
       {/* Main Proposal Card */}
-      <Card>
+      <Card className="border-slate-200/80 shadow-xs">
         <CardBody className="p-6 sm:p-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-6 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
                   {isClient ? "Proposal Review" : "Submitted Proposal"}
                 </span>
                 <Badge
@@ -292,7 +304,13 @@ export default function ProposalDetailsPage() {
                       : "neutral"
                   }
                 >
-                  {proposal.status}
+                  {proposal.status === "accepted"
+                    ? "Accepted into Contract"
+                    : proposal.status === "rejected"
+                    ? "Declined"
+                    : proposal.status === "pending"
+                    ? "Under Review"
+                    : proposal.status}
                 </Badge>
               </div>
 
@@ -300,7 +318,7 @@ export default function ProposalDetailsPage() {
                 {job?.title || "Job Listing"}
               </h1>
 
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="text-xs text-slate-500">
                 Submitted on{" "}
                 {new Date(proposal.createdAt).toLocaleDateString("en-IN", {
                   year: "numeric",
@@ -312,13 +330,13 @@ export default function ProposalDetailsPage() {
 
             {/* Freelancer details (Visible to Client) */}
             {isClient && freelancer && (
-              <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-700 uppercase">
+              <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/70">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-700 uppercase overflow-hidden border border-slate-300">
                   {freelancer.avatar ? (
                     <img
                       src={freelancer.avatar}
                       alt={freelancer.fullName}
-                      className="w-full h-full rounded-full object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     freelancer.fullName?.[0] || "F"
@@ -334,13 +352,13 @@ export default function ProposalDetailsPage() {
 
           {/* Feedback messages */}
           {formError && (
-            <div className="mt-5 rounded-lg bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700">
+            <div className="mt-5 rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700">
               {formError}
             </div>
           )}
 
           {successMessage && (
-            <div className="mt-5 rounded-lg bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-700">
+            <div className="mt-5 rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-800 font-medium">
               {successMessage}
             </div>
           )}
@@ -374,7 +392,9 @@ export default function ProposalDetailsPage() {
 
               {/* Cover Letter */}
               <div>
-                <h2 className="text-sm font-semibold text-slate-900 mb-2">Cover Letter</h2>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
+                  Cover Letter & Pitch
+                </h2>
                 <div className="p-4 bg-white rounded-xl border border-slate-200/80 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                   {proposal.coverLetter}
                 </div>
@@ -412,45 +432,53 @@ export default function ProposalDetailsPage() {
             /* Freelancer Form */
             <form onSubmit={handleUpdate} className="mt-6 space-y-6">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                  Cover Letter
-                </label>
-                <textarea
+                <Textarea
+                  label="Cover Letter / Value Pitch *"
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   rows={8}
                   disabled={!canEdit}
-                  className="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 leading-relaxed"
+                  required
                 />
+                <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                  <span>Minimum 20 characters required</span>
+                  {canEdit && (
+                    <span className={coverLetter.trim().length < 20 ? "text-amber-600" : "text-emerald-700"}>
+                      {coverLetter.trim().length} chars
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                    Bid Amount (₹)
-                  </label>
-                  <input
+                  <Input
+                    label="Your Bid Amount (₹ INR) *"
                     type="number"
                     min="1"
                     value={bidAmount}
                     onChange={(e) => setBidAmount(e.target.value)}
                     disabled={!canEdit}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50"
+                    required
                   />
+                  <p className="mt-1 text-[11px] text-slate-400 font-medium">
+                    Agreed milestone release amount
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                    Delivery Time (Days)
-                  </label>
-                  <input
+                  <Input
+                    label="Estimated Delivery Time (Days) *"
                     type="number"
                     min="1"
                     value={deliveryTime}
                     onChange={(e) => setDeliveryTime(e.target.value)}
                     disabled={!canEdit}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50"
+                    required
                   />
+                  <p className="mt-1 text-[11px] text-slate-400 font-medium">
+                    Total calendar days to submit initial deliverables
+                  </p>
                 </div>
               </div>
 
@@ -476,7 +504,7 @@ export default function ProposalDetailsPage() {
                     </Button>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100 w-full text-center">
+                  <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/80 w-full text-center">
                     This proposal is in status "{proposal.status}" and can no longer be edited or withdrawn.
                   </p>
                 )}
@@ -515,7 +543,8 @@ export default function ProposalDetailsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAcceptModal(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-md cursor-pointer"
+                  aria-label="Close dialog"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -529,7 +558,7 @@ export default function ProposalDetailsPage() {
 
             <div className="p-6 space-y-4">
               {actionError && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700">
+                <div className="rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700">
                   {actionError}
                 </div>
               )}
@@ -564,7 +593,7 @@ export default function ProposalDetailsPage() {
                   <button
                     type="button"
                     onClick={() => setExecutionMode("simple")}
-                    className={`p-3 text-left rounded-xl border transition-all text-xs ${
+                    className={`p-3 text-left rounded-xl border transition-all text-xs cursor-pointer ${
                       executionMode === "simple"
                         ? "border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600"
                         : "border-slate-200 hover:border-slate-300 text-slate-700"
@@ -579,7 +608,7 @@ export default function ProposalDetailsPage() {
                   <button
                     type="button"
                     onClick={() => setExecutionMode("milestone")}
-                    className={`p-3 text-left rounded-xl border transition-all text-xs ${
+                    className={`p-3 text-left rounded-xl border transition-all text-xs cursor-pointer ${
                       executionMode === "milestone"
                         ? "border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600"
                         : "border-slate-200 hover:border-slate-300 text-slate-700"
@@ -593,7 +622,7 @@ export default function ProposalDetailsPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg bg-amber-50/70 border border-amber-200/80 p-3 text-xs text-amber-800 leading-relaxed">
+              <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3 text-xs text-amber-800 leading-relaxed">
                 Accepting this proposal sets the job status to <strong>in_progress</strong> and marks this proposal as <strong>accepted</strong>.
               </div>
             </div>

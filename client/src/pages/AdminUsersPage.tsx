@@ -8,7 +8,9 @@ import {
   type AdminUser,
 } from "../services/admin.api";
 import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -34,7 +36,7 @@ export default function AdminUsersPage() {
       setUsers(data.users);
       setTotalPages(data.pagination.totalPages);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to load users.");
+      setError(err?.response?.data?.message || "Failed to load user directory.");
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function AdminUsersPage() {
     try {
       setActionLoadingId(user._id);
       await updateAdminUserStatus(user._id, !user.isActive);
-      toast.success(`User ${user.isActive ? "suspended" : "activated"} successfully.`);
+      toast.success(`User account ${user.isActive ? "suspended" : "activated"} successfully.`);
       await loadUsers();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to update user status.");
@@ -87,24 +89,42 @@ export default function AdminUsersPage() {
     }
   };
 
+  const getRoleBadgeVariant = (userRole: string) => {
+    switch (userRole) {
+      case "admin":
+        return "danger";
+      case "client":
+        return "primary";
+      case "freelancer":
+        return "success";
+      default:
+        return "neutral";
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header Banner */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Marketplace User Accounts</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Marketplace User Accounts
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
             Search, verify identity flags, inspect account statuses, and moderate platform members.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+
+        {/* Filter dropdowns */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <select
             value={role}
+            aria-label="Filter by account role"
             onChange={(e) => {
               setRole(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs outline-none hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
           >
             <option value="">All Account Roles</option>
             <option value="client">Clients</option>
@@ -114,11 +134,12 @@ export default function AdminUsersPage() {
 
           <select
             value={activeFilter}
+            aria-label="Filter by account status"
             onChange={(e) => {
               setActiveFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs outline-none hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
           >
             <option value="">All Statuses</option>
             <option value="true">Active Accounts</option>
@@ -128,23 +149,30 @@ export default function AdminUsersPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          {error}
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 flex items-center justify-between">
+          <span>{error}</span>
+          <Button variant="danger" size="sm" onClick={loadUsers}>
+            Retry
+          </Button>
         </div>
       )}
 
       {/* Users Container: Responsive Cards below 1024px (lg:hidden), Desktop Table at 1024px+ (hidden lg:block) */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-sm text-slate-500">Loading user registry...</div>
+          <div className="p-6 space-y-4">
+            <LoadingSkeleton className="h-10 w-full rounded-xl" count={5} />
+          </div>
         ) : users.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">No users match the criteria.</div>
+          <div className="p-12 text-center text-sm text-slate-500">
+            No marketplace users match the selected filter criteria.
+          </div>
         ) : (
           <>
             {/* Desktop Table View (lg:block) */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 uppercase">
+                <thead className="bg-slate-50/75 text-xs font-semibold text-slate-500 uppercase">
                   <tr>
                     <th className="px-6 py-3.5">User Identity</th>
                     <th className="px-6 py-3.5">Email</th>
@@ -154,31 +182,23 @@ export default function AdminUsersPage() {
                     <th className="px-6 py-3.5 text-right">Moderation Controls</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-100">
                   {users.map((u) => {
                     const isProcessing = actionLoadingId === u._id;
                     const isAdmin = u.role === "admin";
                     return (
-                      <tr key={u._id} className="hover:bg-slate-50">
+                      <tr key={u._id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="font-semibold text-slate-900">{u.fullName}</div>
+                          <div className="font-bold text-slate-900">{u.fullName}</div>
                           <div className="text-xs text-slate-500 font-mono">@{u.username}</div>
                         </td>
                         <td className="px-6 py-4 text-xs text-slate-600 font-mono">
                           {u.email}
                         </td>
                         <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
-                              u.role === "admin"
-                                ? "bg-rose-100 text-rose-800"
-                                : u.role === "client"
-                                ? "bg-indigo-100 text-indigo-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}
-                          >
-                            {u.role}
-                          </span>
+                          <Badge variant={getRoleBadgeVariant(u.role)} size="sm">
+                            {u.role.toUpperCase()}
+                          </Badge>
                         </td>
                         <td className="px-6 py-4">
                           <Badge variant={u.isActive ? "success" : "danger"} size="sm">
@@ -192,30 +212,33 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-1.5">
-                            <button
-                              type="button"
+                            <Button
+                              variant="outline"
+                              size="sm"
                               disabled={isAdmin || isProcessing}
                               onClick={() => handleStatus(u)}
-                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                              title={isAdmin ? "Protected Admin Account" : undefined}
                             >
                               {u.isActive ? "Deactivate" : "Activate"}
-                            </button>
-                            <button
-                              type="button"
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               disabled={isAdmin || isProcessing}
                               onClick={() => handleVerify(u)}
-                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                              title={isAdmin ? "Protected Admin Account" : undefined}
                             >
                               {u.isVerified ? "Revoke" : "Verify"}
-                            </button>
-                            <button
-                              type="button"
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
                               disabled={isAdmin || isProcessing}
                               onClick={() => setUserToDelete(u)}
-                              className="rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                              title={isAdmin ? "Protected Admin Account" : undefined}
                             >
                               Delete
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -226,14 +249,14 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Mobile / Tablet Card View (< 1024px: lg:hidden) */}
-            <div className="block lg:hidden divide-y divide-slate-200 p-4 space-y-4">
+            <div className="block lg:hidden divide-y divide-slate-100 p-4 space-y-4">
               {users.map((u) => {
                 const isProcessing = actionLoadingId === u._id;
                 const isAdmin = u.role === "admin";
                 return (
                   <div
                     key={`mobile-user-${u._id}`}
-                    className="rounded-xl border border-slate-200 bg-white p-4.5 shadow-2xs space-y-3"
+                    className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs space-y-3"
                   >
                     {/* User Header & Role */}
                     <div className="flex items-start justify-between gap-3">
@@ -241,21 +264,13 @@ export default function AdminUsersPage() {
                         <h2 className="text-sm font-bold text-slate-900 truncate">{u.fullName}</h2>
                         <p className="text-xs text-slate-500 font-mono truncate">@{u.username}</p>
                       </div>
-                      <span
-                        className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
-                          u.role === "admin"
-                            ? "bg-rose-100 text-rose-800"
-                            : u.role === "client"
-                            ? "bg-indigo-100 text-indigo-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
-                      >
-                        {u.role}
-                      </span>
+                      <Badge variant={getRoleBadgeVariant(u.role)} size="sm">
+                        {u.role.toUpperCase()}
+                      </Badge>
                     </div>
 
                     {/* Email */}
-                    <div className="text-xs text-slate-600 font-mono break-all bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                    <div className="text-xs text-slate-600 font-mono break-all bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                       {u.email}
                     </div>
 
@@ -270,31 +285,34 @@ export default function AdminUsersPage() {
                     </div>
 
                     {/* Moderation Controls */}
-                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-end gap-2">
-                      <button
-                        type="button"
+                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={isAdmin || isProcessing}
                         onClick={() => handleStatus(u)}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                        title={isAdmin ? "Protected Admin Account" : undefined}
                       >
                         {u.isActive ? "Deactivate" : "Activate"}
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={isAdmin || isProcessing}
                         onClick={() => handleVerify(u)}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                        title={isAdmin ? "Protected Admin Account" : undefined}
                       >
                         {u.isVerified ? "Revoke" : "Verify"}
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
                         disabled={isAdmin || isProcessing}
                         onClick={() => setUserToDelete(u)}
-                        className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                        title={isAdmin ? "Protected Admin Account" : undefined}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -305,23 +323,25 @@ export default function AdminUsersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs">
-            <span className="text-slate-600">Page {page} of {totalPages}</span>
+          <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/75 px-6 py-3.5 text-xs">
+            <span className="text-slate-600 font-medium">Page {page} of {totalPages}</span>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="rounded border border-slate-300 bg-white px-2.5 py-1 font-medium disabled:opacity-50"
               >
                 Previous
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="rounded border border-slate-300 bg-white px-2.5 py-1 font-medium disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}

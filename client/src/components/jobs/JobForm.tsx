@@ -9,18 +9,15 @@ import type {
 
 import { Autocomplete } from "../common/Autocomplete";
 import { MultiSelectAutocomplete } from "../common/MultiSelectAutocomplete";
+import { Button } from "../ui/Button";
 import { POPULAR_SKILLS } from "../../data/skillsData";
 import { POPULAR_CATEGORIES } from "../../data/categoriesData";
 import { getCitiesForCountry } from "../../data/locationsData";
 
 interface JobFormProps {
   initialData?: Partial<CreateJobPayload>;
-
   submitLabel: string;
-
-  onSubmit: (
-    data: CreateJobPayload
-  ) => Promise<void>;
+  onSubmit: (data: CreateJobPayload) => Promise<void>;
 }
 
 export default function JobForm({
@@ -28,95 +25,34 @@ export default function JobForm({
   submitLabel,
   onSubmit,
 }: JobFormProps) {
-  const [title, setTitle] =
-    useState(initialData?.title || "");
-
-  const [description, setDescription] =
-    useState(
-      initialData?.description || ""
-    );
-
-  const [category, setCategory] =
-    useState(
-      initialData?.category || ""
-    );
-
-  const [skills, setSkills] =
-    useState<string[]>(
-      initialData?.skills || []
-    );
-
-  const [budget, setBudget] =
-    useState(
-      initialData?.budget?.toString() ||
-        ""
-    );
-
-  const [budgetType, setBudgetType] =
-    useState<
-      "fixed" | "hourly"
-    >(
-      initialData?.budgetType ||
-        "fixed"
-    );
-
-  const [
-    experienceLevel,
-    setExperienceLevel,
-  ] = useState<
-    "entry" | "intermediate" | "expert"
-  >(
-    initialData?.experienceLevel ||
-      "entry"
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [description, setDescription] = useState(initialData?.description || "");
+  const [category, setCategory] = useState(initialData?.category || "");
+  const [skills, setSkills] = useState<string[]>(initialData?.skills || []);
+  const [budget, setBudget] = useState(initialData?.budget?.toString() || "");
+  const [budgetType, setBudgetType] = useState<"fixed" | "hourly">(initialData?.budgetType || "fixed");
+  const [experienceLevel, setExperienceLevel] = useState<"entry" | "intermediate" | "expert">(
+    initialData?.experienceLevel || "entry"
   );
+  const [duration, setDuration] = useState(initialData?.duration || "");
+  const [location, setLocation] = useState(initialData?.location || "");
+  const [isRemote, setIsRemote] = useState(initialData?.isRemote ?? true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [duration, setDuration] =
-    useState(
-      initialData?.duration || ""
-    );
-
-  const [location, setLocation] =
-    useState(
-      initialData?.location || ""
-    );
-
-  const [isRemote, setIsRemote] =
-    useState(
-      initialData?.isRemote ?? true
-    );
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const handleSubmit = async (
-    event: FormEvent
-  ) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-
     setError("");
 
-    const numericBudget =
-      Number(budget);
+    const numericBudget = Number(budget);
 
-    if (
-      !Number.isFinite(
-        numericBudget
-      ) ||
-      numericBudget <= 0
-    ) {
-      setError(
-        "Please enter a valid budget."
-      );
+    if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
+      setError("Please enter a valid budget greater than zero.");
       return;
     }
 
     if (skills.length === 0) {
-      setError(
-        "Please add at least one skill."
-      );
+      setError("Please add at least one required skill.");
       return;
     }
 
@@ -140,7 +76,7 @@ export default function JobForm({
       setError(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to save job."
+          "Failed to save job posting. Please try again."
       );
     } finally {
       setLoading(false);
@@ -148,52 +84,60 @@ export default function JobForm({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg bg-red-100 p-4 text-red-700">
-          {error}
+        <div
+          role="alert"
+          className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700 flex items-start gap-3 animate-in fade-in duration-200"
+        >
+          <svg className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
+      {/* Project Title */}
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          Job Title
+        <label
+          htmlFor="job-title"
+          className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+        >
+          Job Title <span className="text-rose-500">*</span>
         </label>
-
         <input
+          id="job-title"
           value={title}
-          onChange={(event) =>
-            setTitle(event.target.value)
-          }
+          onChange={(event) => setTitle(event.target.value)}
           required
-          className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
-          placeholder="Build a React dashboard"
+          disabled={loading}
+          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
+          placeholder="e.g. Senior Full-Stack Engineer for Next.js SaaS Platform"
         />
       </div>
 
+      {/* Project Description */}
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          Description
+        <label
+          htmlFor="job-description"
+          className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+        >
+          Project Description <span className="text-rose-500">*</span>
         </label>
-
         <textarea
+          id="job-description"
           value={description}
-          onChange={(event) =>
-            setDescription(
-              event.target.value
-            )
-          }
+          onChange={(event) => setDescription(event.target.value)}
           required
-          rows={7}
-          className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
-          placeholder="Describe the project..."
+          rows={6}
+          disabled={loading}
+          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition resize-y disabled:bg-slate-50"
+          placeholder="Provide an overview of your requirements, key deliverables, expectations, and any technical constraints..."
         />
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      {/* Category & Skills */}
+      <div className="grid gap-6 md:grid-cols-2">
         <div>
           <Autocomplete
             id="job-category"
@@ -222,140 +166,129 @@ export default function JobForm({
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-3">
+      {/* Budget, Budget Type, Experience Level */}
+      <div className="grid gap-6 md:grid-cols-3">
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Budget
+          <label
+            htmlFor="job-budget"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+          >
+            Budget (INR ₹) <span className="text-rose-500">*</span>
           </label>
-
           <input
+            id="job-budget"
             type="number"
             min="1"
             value={budget}
-            onChange={(event) =>
-              setBudget(event.target.value)
-            }
+            onChange={(event) => setBudget(event.target.value)}
             required
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
+            disabled={loading}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
+            placeholder="50000"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Budget Type
-          </label>
-
-          <select
-            value={budgetType}
-            onChange={(event) =>
-              setBudgetType(
-                event.target.value as
-                  | "fixed"
-                  | "hourly"
-              )
-            }
-            className="w-full rounded-lg border px-4 py-3"
+          <label
+            htmlFor="job-budget-type"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
           >
-            <option value="fixed">
-              Fixed
-            </option>
-
-            <option value="hourly">
-              Hourly
-            </option>
+            Budget Type <span className="text-rose-500">*</span>
+          </label>
+          <select
+            id="job-budget-type"
+            value={budgetType}
+            onChange={(event) => setBudgetType(event.target.value as "fixed" | "hourly")}
+            disabled={loading}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50 cursor-pointer"
+          >
+            <option value="fixed">Fixed Price</option>
+            <option value="hourly">Hourly Rate</option>
           </select>
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Experience
-          </label>
-
-          <select
-            value={experienceLevel}
-            onChange={(event) =>
-              setExperienceLevel(
-                event.target.value as
-                  | "entry"
-                  | "intermediate"
-                  | "expert"
-              )
-            }
-            className="w-full rounded-lg border px-4 py-3"
+          <label
+            htmlFor="job-experience-level"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
           >
-            <option value="entry">
-              Entry
-            </option>
-
-            <option value="intermediate">
-              Intermediate
-            </option>
-
-            <option value="expert">
-              Expert
-            </option>
+            Experience Level <span className="text-rose-500">*</span>
+          </label>
+          <select
+            id="job-experience-level"
+            value={experienceLevel}
+            onChange={(event) => setExperienceLevel(event.target.value as "entry" | "intermediate" | "expert")}
+            disabled={loading}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50 cursor-pointer"
+          >
+            <option value="entry">Entry Level</option>
+            <option value="intermediate">Intermediate Level</option>
+            <option value="expert">Expert Level</option>
           </select>
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      {/* Duration & Location */}
+      <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium">
-            Duration
+          <label
+            htmlFor="job-duration"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+          >
+            Estimated Duration
           </label>
-
           <input
+            id="job-duration"
             value={duration}
-            onChange={(event) =>
-              setDuration(
-                event.target.value
-              )
-            }
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
-            placeholder="2 weeks"
+            onChange={(event) => setDuration(event.target.value)}
+            disabled={loading}
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none transition disabled:bg-slate-50"
+            placeholder="e.g. 2–4 weeks or 3 months"
           />
         </div>
 
         <div>
           <Autocomplete
             id="job-location"
-            label="Location"
+            label="Location (City / Country)"
             value={location}
             onChange={setLocation}
             options={getCitiesForCountry()}
-            disabled={isRemote}
-            placeholder="e.g. Bengaluru, India, or London"
+            disabled={isRemote || loading}
+            placeholder={isRemote ? "Remote (Worldwide)" : "e.g. Bengaluru, India"}
             allowCustom={true}
           />
         </div>
       </div>
 
-      <label className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={isRemote}
-          onChange={(event) =>
-            setIsRemote(
-              event.target.checked
-            )
-          }
-          className="h-4 w-4"
-        />
+      {/* Remote Toggle */}
+      <div className="pt-1">
+        <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isRemote}
+            onChange={(event) => setIsRemote(event.target.checked)}
+            disabled={loading}
+            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition cursor-pointer"
+          />
+          <span className="text-sm font-medium text-slate-800">
+            This is a remote opportunity (freelancers can work from anywhere)
+          </span>
+        </label>
+      </div>
 
-        <span className="text-sm">
-          This is a remote job
-        </span>
-      </label>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-lg bg-indigo-600 px-5 py-3 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-      >
-        {loading
-          ? "Saving..."
-          : submitLabel}
-      </button>
+      {/* Submit Action */}
+      <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          isLoading={loading}
+          disabled={loading}
+        >
+          {submitLabel}
+        </Button>
+      </div>
     </form>
   );
 }

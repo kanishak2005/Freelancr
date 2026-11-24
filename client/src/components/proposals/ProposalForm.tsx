@@ -1,16 +1,12 @@
 import { useState } from "react";
-
-import type {
-  CreateProposalPayload,
-} from "../../services/proposals.api";
+import type { CreateProposalPayload } from "../../services/proposals.api";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { Textarea } from "../ui/Textarea";
 
 interface ProposalFormProps {
   jobId: string;
-
-  onSubmit: (
-    data: CreateProposalPayload
-  ) => Promise<void>;
-
+  onSubmit: (data: CreateProposalPayload) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -19,55 +15,33 @@ export default function ProposalForm({
   onSubmit,
   onCancel,
 }: ProposalFormProps) {
-  const [coverLetter, setCoverLetter] =
-    useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [bidAmount, setBidAmount] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [bidAmount, setBidAmount] =
-    useState("");
-
-  const [deliveryTime, setDeliveryTime] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const handleSubmit = async (
-    event: React.FormEvent
-  ) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
     setError("");
 
     if (coverLetter.trim().length < 20) {
-      setError(
-        "Cover letter must be at least 20 characters."
-      );
+      setError("Cover letter must be at least 20 characters.");
       return;
     }
 
     if (!bidAmount || Number(bidAmount) <= 0) {
-      setError(
-        "Please enter a valid bid amount."
-      );
+      setError("Please enter a valid bid amount.");
       return;
     }
 
-    if (
-      !deliveryTime ||
-      Number(deliveryTime) <= 0
-    ) {
-      setError(
-        "Please enter a valid delivery time."
-      );
+    if (!deliveryTime || Number(deliveryTime) <= 0) {
+      setError("Please enter a valid delivery time.");
       return;
     }
 
     try {
       setLoading(true);
-
       await onSubmit({
         job: jobId,
         coverLetter: coverLetter.trim(),
@@ -81,8 +55,7 @@ export default function ProposalForm({
       setDeliveryTime("");
     } catch (error: any) {
       setError(
-        error?.response?.data?.message ||
-          "Failed to submit proposal."
+        error?.response?.data?.message || "Failed to submit proposal."
       );
     } finally {
       setLoading(false);
@@ -92,106 +65,92 @@ export default function ProposalForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-5 rounded-xl border bg-white p-6 shadow-sm"
+      className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs"
     >
-      <div>
-        <h2 className="text-xl font-semibold">
-          Apply for this Job
+      <div className="border-b border-slate-100 pb-4">
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">
+          Apply for this Opportunity
         </h2>
-
-        <p className="mt-1 text-sm text-gray-500">
-          Submit your proposal to the client.
+        <p className="mt-1 text-xs sm:text-sm text-slate-500">
+          Submit your competitive proposal terms, pitch, and estimated delivery timeline.
         </p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+        <div className="rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs sm:text-sm text-rose-700">
           {error}
         </div>
       )}
 
       <div>
-        <label className="mb-2 block text-sm font-medium">
-          Cover Letter
-        </label>
-
-        <textarea
+        <Textarea
+          label="Cover Letter / Value Pitch *"
           value={coverLetter}
-          onChange={(event) =>
-            setCoverLetter(event.target.value)
-          }
-          rows={7}
-          placeholder="Explain why you are suitable for this project..."
-          className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
+          onChange={(event) => setCoverLetter(event.target.value)}
+          rows={6}
+          placeholder="Detail your relevant experience, technical approach, and how you will solve the client's problem..."
           required
         />
-
-        <p className="mt-1 text-xs text-gray-500">
-          Minimum 20 characters
-        </p>
+        <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+          <span>Minimum 20 characters required</span>
+          <span className={coverLetter.trim().length < 20 ? "text-amber-600" : "text-emerald-700"}>
+            {coverLetter.trim().length} chars
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium">
-            Your Bid Amount
-          </label>
-
-          <input
+          <Input
+            label="Your Bid Amount (₹ INR) *"
             type="number"
             min="1"
             value={bidAmount}
-            onChange={(event) =>
-              setBidAmount(event.target.value)
-            }
-            placeholder="5000"
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
+            onChange={(event) => setBidAmount(event.target.value)}
+            placeholder="e.g. 5000"
             required
           />
+          <p className="mt-1 text-[11px] text-slate-400 font-medium">
+            Agreed project milestone release amount
+          </p>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">
-            Delivery Time
-          </label>
-
-          <input
+          <Input
+            label="Estimated Delivery Time (Days) *"
             type="number"
             min="1"
             value={deliveryTime}
-            onChange={(event) =>
-              setDeliveryTime(event.target.value)
-            }
-            placeholder="7"
-            className="w-full rounded-lg border px-4 py-3 outline-none focus:border-indigo-500"
+            onChange={(event) => setDeliveryTime(event.target.value)}
+            placeholder="e.g. 7"
             required
           />
-
-          <p className="mt-1 text-xs text-gray-500">
-            Number of days
+          <p className="mt-1 text-[11px] text-slate-400 font-medium">
+            Total calendar days to submit initial deliverables
           </p>
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button
+      <div className="pt-2 flex flex-wrap items-center gap-3">
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
           disabled={loading}
-          className="rounded-lg bg-indigo-600 px-6 py-3 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          isLoading={loading}
         >
-          {loading
-            ? "Submitting..."
-            : "Submit Proposal"}
-        </button>
+          Submit Proposal
+        </Button>
 
         {onCancel && (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="md"
             onClick={onCancel}
-            className="rounded-lg border px-6 py-3 font-medium hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Button>
         )}
       </div>
     </form>

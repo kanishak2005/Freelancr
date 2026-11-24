@@ -23,14 +23,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div
       className={clsx(
-        "flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-dashed border-slate-300",
+        "flex flex-col items-center justify-center p-8 sm:p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300/90 shadow-2xs",
         className
       )}
     >
       {icon ? (
-        <div className="mb-4 text-slate-400 p-3 bg-slate-50 rounded-full">{icon}</div>
+        <div className="mb-4 text-slate-400 p-3.5 bg-slate-50 border border-slate-100 rounded-2xl shadow-2xs">{icon}</div>
       ) : (
-        <div className="mb-4 text-slate-400 p-3 bg-slate-50 rounded-full">
+        <div className="mb-4 text-slate-400 p-3.5 bg-slate-50 border border-slate-100 rounded-2xl shadow-2xs">
           <svg
             className="w-8 h-8"
             fill="none"
@@ -46,14 +46,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           </svg>
         </div>
       )}
-      <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-      <p className="mt-1 text-sm text-slate-500 max-w-sm">{description}</p>
+      <h3 className="text-base font-bold tracking-tight text-slate-900">{title}</h3>
+      <p className="mt-1.5 text-sm text-slate-500 max-w-sm leading-relaxed">{description}</p>
       {action && (
-        <div className="mt-5">
+        <div className="mt-6">
           {action.href ? (
             <a
               href={action.href}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-xs"
             >
               {action.label}
             </a>
@@ -61,7 +61,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             <button
               type="button"
               onClick={action.onClick}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors shadow-xs cursor-pointer"
             >
               {action.label}
             </button>
